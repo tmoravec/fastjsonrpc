@@ -25,20 +25,11 @@ Example usage:
 @TODO
 """
 
-import random
-import urlparse
-from StringIO import StringIO
-
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
 from twisted.web.client import Agent
 from twisted.web.http_headers import Headers
-try:
-    from twisted.web.client import FileBodyProducer as StringProducer
-except ImportError:
-    from jsonrpc import StringProducer
-
 
 import jsonrpc
 
@@ -136,7 +127,7 @@ class Proxy(object):
                                               version=self.version)
 
         agent = Agent(reactor)
-        body = StringProducer(json_request)
+        body = jsonrpc.StringProducer(json_request)
         headers = Headers({'Content-Type': ['text/json'],
                            'Content-Length': [str(body.length)]})
 

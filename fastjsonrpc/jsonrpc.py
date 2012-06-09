@@ -39,38 +39,38 @@ ID_MIN = 1
 ID_MAX = 2**31 - 1  # 32-bit maxint
 
 def getJSONRequest(method, args, id_=0, version=VERSION_1):
-        """
-        Returns a JSON object representation of the request.
+    """
+    Returns a JSON object representation of the request.
 
-        @type id_: int or None
-        @param id_: request ID. If None, a notification will be sent. If 0 (the
-        default), we'll coin some random.
+    @type id_: int or None
+    @param id_: request ID. If None, a notification will be sent. If 0 (the
+    default), we'll coin some random.
 
-        @type method: str
-        @param method: Method name
+    @type method: str
+    @param method: Method name
 
-        @type args: list
-        @param args: List of arguments for the method
+    @type args: list
+    @param args: List of arguments for the method
 
-        @type version: float
-        @param version: Which JSON-RPC version to use? Defaults to 1.0
+    @type version: float
+    @param version: Which JSON-RPC version to use? Defaults to 1.0
 
-        @return string JSON representation of the request
-        """
+    @return string JSON representation of the request
+    """
 
-        request = {}
-        request['method'] = method
-        request['params'] = args
+    request = {}
+    request['method'] = method
+    request['params'] = args
 
-        if id_ is not None:
-            if id_ == 0:
-                id_ = random.randint(ID_MIN, ID_MAX)
-            request['id'] = id_
+    if id_ is not None:
+        if id_ == 0:
+            id_ = random.randint(ID_MIN, ID_MAX)
+        request['id'] = id_
 
-        if version == VERSION_2:
-            request['jsonrpc'] = '2.0'
+    if version == VERSION_2:
+        request['jsonrpc'] = '2.0'
 
-        return json.dumps(request)
+    return json.dumps(request)
 
 def getReturnFromJSON(json_response):
     """
