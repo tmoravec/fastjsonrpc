@@ -98,11 +98,11 @@ class JSONRPCServer(resource.Resource):
 
         @type version: float
         @param version: JSON-RPC version
-
-        @TODO Content-Type, Content-Length
         """
 
         encoded = jsonrpc.encodeResponse(result, id_, version)
 
+        request.setHeader('Content-Type', 'text/json')
+        request.setHeader('Content-Length', len(encoded))
         request.write(encoded)
         request.finish()
