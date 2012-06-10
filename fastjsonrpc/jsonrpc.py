@@ -22,8 +22,10 @@ Provides functions for encoding and decoding the JSON into functions, params
 etc. and other JSON-RPC related stuff like constants.
 """
 
+cjson_loaded = False
 try:
     import cjson
+    cjson_loaded = True
 except ImportError:
     try:
         import json
@@ -58,7 +60,8 @@ def jdumps(obj):
     @rtype: str
     @return: JSON representation of obj
     """
-    if cjson:
+    global cjson_loaded
+    if cjson_loaded:
         return cjson.encode(obj)
     else:
         return json.dumps(obj)
@@ -73,7 +76,8 @@ def jloads(json_string):
     @rtype: mixed
     @return: Whatever the JSON contained
     """
-    if cjson:
+    global cjson_loaded
+    if cjson_loaded:
         return cjson.decode(json_string)
     else:
         return json.loads(json_string)
