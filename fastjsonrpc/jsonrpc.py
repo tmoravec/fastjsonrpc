@@ -46,7 +46,7 @@ INTERNAL_ERROR = -32603
 ID_MIN = 1
 ID_MAX = 2**31 - 1  # 32-bit maxint
 
-def getJSONRequest(method, args, id_=0, version=VERSION_1):
+def encodeRequest(method, args, id_=0, version=VERSION_1):
     """
     Returns a JSON object representation of the request.
 
@@ -80,7 +80,7 @@ def getJSONRequest(method, args, id_=0, version=VERSION_1):
 
     return json.dumps(request)
 
-def getReturnFromJSON(json_response):
+def decodeResponse(json_response):
     """
     Parses response JSON and returns what the server responded.
 

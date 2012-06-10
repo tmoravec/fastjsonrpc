@@ -25,6 +25,7 @@ Example usage:
 @TODO
 """
 
+
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
@@ -123,8 +124,7 @@ class Proxy(object):
         @TODO support **kwargs
         """
 
-        json_request = jsonrpc.getJSONRequest(method, args,
-                                              version=self.version)
+        json_request = jsonrpc.encodeRequest(method, args, version=self.version)
 
         agent = Agent(reactor)
         body = jsonrpc.StringProducer(json_request)
@@ -133,5 +133,5 @@ class Proxy(object):
 
         d = agent.request('POST', self.url, headers, body)
         d.addCallback(self.bodyFromResponse)
-        d.addCallback(jsonrpc.getReturnFromJSON)
+        d.addCallback(jsonrpc.decodeResponse)
         return d
