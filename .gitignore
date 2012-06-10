@@ -4,3 +4,4 @@
 *.pyo
 mindmaps/
 fastjsonrpc/pylint.rc
+examples/twistd.pid
