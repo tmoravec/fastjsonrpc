@@ -69,7 +69,11 @@ class JSONRPCServer(resource.Resource):
             if callable(function):
 
                 # Here we actually call the function
-                d = maybeDeferred(function, *request_dict['params'])
+                if 'params' in request_dict:
+                    d = maybeDeferred(function, *request_dict['params'])
+                else:
+                    d = maybeDeferred(function)
+
                 d.addBoth(self.cbResult, request, request_dict['id'],
                           request_dict['jsonrpc'])
 
