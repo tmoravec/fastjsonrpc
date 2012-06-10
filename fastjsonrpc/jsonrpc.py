@@ -58,7 +58,6 @@ def jdumps(obj):
     @rtype: str
     @return: JSON representation of obj
     """
-    global cjson, json
     if cjson:
         return cjson.encode(obj)
     else:
@@ -74,7 +73,6 @@ def jloads(json_string):
     @rtype: mixed
     @return: Whatever the JSON contained
     """
-    global cjson, json
     if cjson:
         return cjson.decode(json_string)
     else:
