@@ -36,8 +36,6 @@ except ImportError:
 import random
 import types
 
-from twisted.python.failure import Failure
-
 VERSION_1 = 1.0
 VERSION_2 = 2.0
 
@@ -224,27 +222,27 @@ def encodeResponse(result, id_, version):
 
         error_result = {}
         try:
-            error_result['message'] = str(result.value.strerror)
+            error_result['message'] = str(result.strerror)
         except AttributeError:
-            error_result['message'] = str(result.value)
+            error_result['message'] = str(result)
 
-        if isinstance(result.value, TypeError):
+        if isinstance(result, TypeError):
             error_result['code'] = INVALID_PARAMS
         else:
             try:
-                error_result['code'] = result.value.errno
+                error_result['code'] = result.errno
             except AttributeError:
                 error_result['code'] = INTERNAL_ERROR
 
         try:
             if result.value.data is not None:
-                error_result['data'] = result.value.data
+                error_result['data'] = result.data
         except AttributeError:
             pass
 
         return error_result
 
-    if isinstance(result, Failure):
+    if isinstance(result, Exception):
         error_result = getErrorResponse(result)
     else:
         error_result = None

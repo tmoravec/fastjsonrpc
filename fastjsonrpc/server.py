@@ -100,6 +100,8 @@ class JSONRPCServer(resource.Resource):
         @param version: JSON-RPC version
         """
 
+        if isinstance(result, Failure):
+            result = result.value
         encoded = jsonrpc.encodeResponse(result, id_, version)
 
         request.setHeader('Content-Type', 'text/json')
