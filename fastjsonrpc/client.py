@@ -25,6 +25,9 @@ Example usage:
 @TODO
 """
 
+from zope.interface import implements
+from twisted.internet.defer import succeed
+from twisted.web.iweb import IBodyProducer
 
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
@@ -72,6 +75,30 @@ class ReceiverProtocol(Protocol):
         """
 
         self.finished.callback(self.body)
+
+
+class StringProducer(object):
+    """
+    There's no FileBodyProducer in Twisted < 12.0.0
+    See http://twistedmatrix.com/documents/current/web/howto/client.html for
+    details about this class
+    """
+    implements(IBodyProducer)
+
+    def __init__(self, body):
+        self.body = body
+        self.length = len(body)
+
+    def startProducing(self, consumer):
+        consumer.write(self.body)
+        return succeed(None)
+
+    def pauseProducing(self):
+        pass
+
+    def stopProducing(self):
+        pass
+
 
 class Proxy(object):
     """
@@ -127,7 +154,7 @@ class Proxy(object):
         json_request = jsonrpc.encodeRequest(method, args, version=self.version)
 
         agent = Agent(reactor)
-        body = jsonrpc.StringProducer(json_request)
+        body = StringProducer(json_request)
         headers = Headers({'Content-Type': ['text/json'],
                            'Content-Length': [str(body.length)]})
 
