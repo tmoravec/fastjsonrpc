@@ -192,6 +192,39 @@ def decodeRequest(request):
 
     return decoded
 
+def _getErrorResponse(result):
+    """
+    Parses Failure into a dict that can be serialized
+
+    @type result: t.p.f.Failure
+    @param result: Failure instance to be parsed
+
+    @rtype: dict
+    @return: dict that can be serialized to JSON
+    """
+
+    error_result = {}
+    try:
+        error_result['message'] = str(result.strerror)
+    except AttributeError:
+        error_result['message'] = str(result)
+
+    if isinstance(result, TypeError):
+        error_result['code'] = INVALID_PARAMS
+    else:
+        try:
+            error_result['code'] = result.errno
+        except AttributeError:
+            error_result['code'] = INTERNAL_ERROR
+
+    try:
+        if result.data is not None:
+            error_result['data'] = result.data
+    except AttributeError:
+        pass
+
+    return error_result
+
 def encodeResponse(result, id_, version):
     """
     Encodes the server response into JSON.
@@ -209,41 +242,8 @@ def encodeResponse(result, id_, version):
     @return: JSON-encoded response
     """
 
-    def getErrorResponse(result):
-        """
-        Parses Failure into a dict that can be serialized
-
-        @type result: t.p.f.Failure
-        @param result: Failure instance to be parsed
-
-        @rtype: dict
-        @return: dict that can be serialized to JSON
-        """
-
-        error_result = {}
-        try:
-            error_result['message'] = str(result.strerror)
-        except AttributeError:
-            error_result['message'] = str(result)
-
-        if isinstance(result, TypeError):
-            error_result['code'] = INVALID_PARAMS
-        else:
-            try:
-                error_result['code'] = result.errno
-            except AttributeError:
-                error_result['code'] = INTERNAL_ERROR
-
-        try:
-            if result.data is not None:
-                error_result['data'] = result.data
-        except AttributeError:
-            pass
-
-        return error_result
-
     if isinstance(result, Exception):
-        error_result = getErrorResponse(result)
+        error_result = _getErrorResponse(result)
     else:
         error_result = None
 
