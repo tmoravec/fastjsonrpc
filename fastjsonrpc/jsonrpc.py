@@ -23,7 +23,7 @@ etc. and other JSON-RPC related stuff like constants.
 """
 
 try:
-    import cjson as json
+    import cjson
 except ImportError:
     try:
         import json
@@ -49,6 +49,20 @@ INTERNAL_ERROR = -32603
 
 ID_MIN = 1
 ID_MAX = 2**31 - 1  # 32-bit maxint
+
+def jdumps(obj):
+    global cjson, json
+    if cjson:
+        return cjson.encode(obj)
+    else:
+        return json.dumps(obj)
+
+def jloads(json_string):
+    global cjson, json
+    if cjson:
+        return cjson.decode(json_string)
+    else:
+        return json.loads(json_string)
 
 def encodeRequest(method, args, id_=0, version=VERSION_1):
     """
@@ -84,7 +98,7 @@ def encodeRequest(method, args, id_=0, version=VERSION_1):
     if version == VERSION_2:
         request['jsonrpc'] = '2.0'
 
-    return json.dumps(request)
+    return jdumps(request)
 
 def decodeResponse(json_response):
     """
@@ -100,7 +114,7 @@ def decodeResponse(json_response):
     @TODO handle errors properly.
     """
 
-    response = json.loads(json_response)
+    response = jloads(json_response)
 
     if 'result' in response and response['result'] is not None:
         return response['result']
@@ -122,7 +136,7 @@ def decodeRequest(request):
     """
 
     try:
-        decoded = json.loads(request)
+        decoded = jloads(request)
     except ValueError:
         raise JSONRPCError('Failed to parse JSON', PARSE_ERROR)
 
@@ -232,7 +246,7 @@ def encodeResponse(result, id_, version):
         if version == VERSION_1:
             response['error'] = None
 
-    return json.dumps(response)
+    return jdumps(response)
 
 
 class JSONRPCError(Exception):
