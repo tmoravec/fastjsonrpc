@@ -192,12 +192,12 @@ def decodeRequest(request):
 
     return decoded
 
-def _getErrorResponse(result):
+def _getErrorResponse(exception):
     """
-    Parses Failure into a dict that can be serialized
+    Parses Exception into a dict, that can be encoded to JSON.
 
-    @type result: t.p.f.Failure
-    @param result: Failure instance to be parsed
+    @type result: Exception
+    @param result: Exception to be parsed
 
     @rtype: dict
     @return: dict that can be serialized to JSON
@@ -205,21 +205,21 @@ def _getErrorResponse(result):
 
     error_result = {}
     try:
-        error_result['message'] = str(result.strerror)
+        error_result['message'] = str(exception.strerror)
     except AttributeError:
-        error_result['message'] = str(result)
+        error_result['message'] = str(exception)
 
-    if isinstance(result, TypeError):
+    if isinstance(exception, TypeError):
         error_result['code'] = INVALID_PARAMS
     else:
         try:
-            error_result['code'] = result.errno
+            error_result['code'] = exception.errno
         except AttributeError:
             error_result['code'] = INTERNAL_ERROR
 
     try:
-        if result.data is not None:
-            error_result['data'] = result.data
+        if exception.data is not None:
+            error_result['data'] = exception.data
     except AttributeError:
         pass
 
