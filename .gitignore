@@ -3,3 +3,4 @@
 *.pyc
 *.pyo
 mindmaps/
+fastjsonrpc/pylint.rc
