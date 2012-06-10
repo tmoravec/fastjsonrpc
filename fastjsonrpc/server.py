@@ -73,6 +73,8 @@ class JSONRPCServer(resource.Resource):
 
         else:
 
+            # Send the error right now, before returning from this function.
+            # The server doesn't care what happens first.
             exception = jsonrpc.JSONRPCError(
                     'Method %s not found' % request_dict['method'],
                     jsonrpc.METHOD_NOT_FOUND)
