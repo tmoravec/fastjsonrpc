@@ -51,6 +51,15 @@ ID_MIN = 1
 ID_MAX = 2**31 - 1  # 32-bit maxint
 
 def jdumps(obj):
+    """
+    Encode JSON no matter what library did we import
+
+    @type obj: mixed
+    @param obj: Whatever we want to encode
+
+    @rtype: str
+    @return: JSON representation of obj
+    """
     global cjson, json
     if cjson:
         return cjson.encode(obj)
@@ -58,6 +67,15 @@ def jdumps(obj):
         return json.dumps(obj)
 
 def jloads(json_string):
+    """
+    Decode JSON no matter what library did we import
+
+    @type json_string: str
+    @param json_string: JSON to be decoded
+
+    @rtype: mixed
+    @return: Whatever the JSON contained
+    """
     global cjson, json
     if cjson:
         return cjson.decode(json_string)
