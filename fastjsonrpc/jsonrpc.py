@@ -127,7 +127,8 @@ def decodeResponse(json_response):
     @rtype: mixed
     @return: What the function returned
 
-    @TODO handle errors properly.
+    @raise ValueError: If the response is not valid JSON-RPC response.
+    @TODO Do more checks and handle errors properly.
     """
 
     response = jloads(json_response)
@@ -142,13 +143,15 @@ def decodeResponse(json_response):
 
 def decodeRequest(request):
     """
-    Decodes the JSON encoded request. Ensures it is valid.
+    Decodes the JSON encoded request.
 
     @type request: str
     @param request: The JSON encoded request
 
     @rtype: dict
     @return: dict, containing id, method, params and (if present) jsonrpc
+
+    @raise JSONRPCError: If there's error in parsing.
     """
 
     try:
