@@ -95,7 +95,6 @@ class JSONRPCServer(resource.Resource):
         @param version: JSON-RPC version
         """
 
-        print 'version:', type(version), version
         encoded = jsonrpc.encodeResponse(result, id_, version)
 
         request.write(encoded)
