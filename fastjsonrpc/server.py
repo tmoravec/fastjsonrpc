@@ -24,6 +24,7 @@ Provides JSONRPCServer class, which can be used to expose methods via RPC.
 from twisted.web import resource
 from twisted.web import server
 from twisted.internet.defer import maybeDeferred
+from twisted.python.failure import Failure
 
 import jsonrpc
 
@@ -56,7 +57,6 @@ class JSONRPCServer(resource.Resource):
         care about sending the response.
 
         @TODO Support for **kwargs
-        @TODO Handle non-existing methods
         """
 
         request.content.seek(0, 0)
@@ -72,9 +72,14 @@ class JSONRPCServer(resource.Resource):
                       request_dict['jsonrpc'])
 
         else:
-            raise jsonrpc.JSONRPCError(
-                    jsonrpc.METHOD_NOT_FOUND,
-                    'Method %s not found' % request_dict['method'])
+
+            exception = jsonrpc.JSONRPCError(
+                    'Method %s not found' % request_dict['method'],
+                    jsonrpc.METHOD_NOT_FOUND)
+            f = Failure(exception)
+            self.cbResult(f, request, request_dict['id'],
+                          request_dict['jsonrpc'])
+
 
         return server.NOT_DONE_YET
 

@@ -182,7 +182,7 @@ def encodeResponse(result, id_, version):
         """
 
         error_result = {}
-        error_result['message'] = str(result.value)
+        error_result['message'] = str(result.value.strerr)
 
         if isinstance(result.value, TypeError):
             error_result['code'] = INVALID_PARAMS
