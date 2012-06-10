@@ -22,8 +22,11 @@ TODO
 
 * Batch requests
 
-* Better handling of errors in the client
+* Support keyword arguments
 
 * Tests
+
+* Better handling of errors in the client
+
 
 
