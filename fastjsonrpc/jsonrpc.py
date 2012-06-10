@@ -197,7 +197,7 @@ def encodeResponse(result, id_, version):
         if version == VERSION_1:
             response['result'] = None
     else:
-        response['result'] = [result]
+        response['result'] = result
         if version == VERSION_1:
             response['error'] = None
 
