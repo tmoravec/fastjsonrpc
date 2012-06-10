@@ -63,6 +63,7 @@ class JSONRPCServer(resource.Resource):
             request.content.seek(0, 0)
             request_content = request.content.read()
             request_dict = jsonrpc.decodeRequest(request_content)
+            jsonrpc.verifyRequest(request_dict)
 
             function = getattr(self, 'jsonrpc_%s' % request_dict['method'],
                                None)

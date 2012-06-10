@@ -156,8 +156,21 @@ def decodeRequest(request):
     except ValueError:
         raise JSONRPCError('Failed to parse JSON', PARSE_ERROR)
 
-    try:
+    return decoded
 
+def verifyRequest(decoded):
+    """
+    Verifies the request. Expects it to be already parsed. Doesn't return
+    anything, but rather raises an exception.
+
+    @type decoded: dict
+    @param decoded: Decoded request from user
+
+    @raise JSONRPCError: If there's anything wrong with the request, raise
+    JSONRPCError with description of what's wrong. Attempts to add to it as much
+    information as possible (id, version).
+    """
+    try:
         # 'jsonrpc' is only contained in V2 requests
         if 'jsonrpc' in decoded:
             if not isinstance(decoded['jsonrpc'],
@@ -189,8 +202,6 @@ def decodeRequest(request):
             raise JSONRPCError(e.strerror, e.errno, version=decoded['jsonrpc'])
         else:
             raise JSONRPCError(e.strerror, e.errno)
-
-    return decoded
 
 def _getErrorResponse(exception):
     """
