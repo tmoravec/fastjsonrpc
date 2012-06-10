@@ -59,29 +59,26 @@ class JSONRPCServer(resource.Resource):
         @TODO Support for **kwargs
         """
 
-        request.content.seek(0, 0)
-        request_content = request.content.read()
-        request_dict = jsonrpc.decodeRequest(request_content)
+        try:
+            request.content.seek(0, 0)
+            request_content = request.content.read()
+            request_dict = jsonrpc.decodeRequest(request_content)
 
-        function = getattr(self, 'jsonrpc_%s' % request_dict['method'], None)
-        if callable(function):
+            function = getattr(self, 'jsonrpc_%s' % request_dict['method'], None)
+            if callable(function):
 
-            # Here we actually call the function!
-            d = maybeDeferred(function, *request_dict['params'])
-            d.addBoth(self.cbResult, request, request_dict['id'],
-                      request_dict['jsonrpc'])
-
-        else:
-
-            # Send the error right now, before returning from this function.
-            # The server doesn't care what happens first.
-            exception = jsonrpc.JSONRPCError(
-                    'Method %s not found' % request_dict['method'],
-                    jsonrpc.METHOD_NOT_FOUND)
-            f = Failure(exception)
-            self.cbResult(f, request, request_dict['id'],
+                # Here we actually call the function
+                d = maybeDeferred(function, *request_dict['params'])
+                d.addBoth(self.cbResult, request, request_dict['id'],
                           request_dict['jsonrpc'])
 
+            else:
+                msg = 'Method %s not found' % request_dict['method']
+                raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND)
+
+        except jsonrpc.JSONRPCError as e:
+            f = Failure(e)
+            self.cbResult(f, request, f.value.id_, f.value.version)
 
         return server.NOT_DONE_YET
 

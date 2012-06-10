@@ -112,7 +112,7 @@ def decodeResponse(json_response):
 
 def decodeRequest(request):
     """
-    Decodes the JSON encoded request
+    Decodes the JSON encoded request. Ensures it is valid.
 
     @type request: str
     @param request: The JSON encoded request
@@ -123,33 +123,39 @@ def decodeRequest(request):
 
     try:
         decoded = json.loads(request)
+    except ValueError:
+        raise JSONRPCError('Failed to parse JSON', PARSE_ERROR)
 
-        assert isinstance(decoded['method'], types.StringTypes), \
-                          'Invalid method type: %s' % type(decoded['method'])
-
-        assert isinstance(decoded['params'],
-                          (types.ListType, types.TupleType)), \
-                          'Invalid params type: %s' % type(decoded['params'])
+    try:
 
         # 'jsonrpc' is only contained in V2 requests
         if 'jsonrpc' in decoded:
-            assert isinstance(decoded['jsonrpc'],
-                              (types.StringTypes, types.FloatType)), \
-                              'Invalid jsonrpc type: %s' % \
-                                      type(decoded['jsonrpc'])
+            if not isinstance(decoded['jsonrpc'],
+                              (types.StringTypes, types.FloatType)):
+                raise JSONRPCError('Invalid jsonrpc type', INVALID_REQUEST)
+
             decoded['jsonrpc'] = float(decoded['jsonrpc'])
         else:
             decoded['jsonrpc'] = VERSION_1
 
-        # In the case of a notification, there's no id
-        if 'id' in decoded:
-            assert isinstance(decoded['id'], types.IntType), \
-                              'Invalid id type: %s' % type(decoded['id'])
+        if not isinstance(decoded['method'], types.StringTypes):
+            raise JSONRPCError('Invalid method type', INVALID_REQUEST)
 
-    except ValueError:
-        raise JSONRPCError(PARSE_ERROR)
-    except AssertionError:
-        raise JSONRPCError(INVALID_REQUEST)
+        if not isinstance(decoded['params'], (types.ListType, types.TupleType)):
+            raise JSONRPCError('Invalid params type', INVALID_REQUEST)
+
+    except JSONRPCError as e:
+        # Add all known info to the exception, so we can return it correctly
+
+        if 'id' in decoded and 'jsonrpc' in decoded:
+            raise JSONRPCError(e.strerror, e.errno, id_=decoded['id'],
+                               version=decoded['jsonrpc'])
+        elif 'id' in decoded:
+            raise JSONRPCError(e.strerror, e.errno, id_=decoded['id'])
+        elif 'jsonrpc' in decoded:
+            raise JSONRPCError(e.strerror, e.errno, version=decoded['jsonrpc'])
+        else:
+            raise JSONRPCError(e.strerror, e.errno)
 
     return decoded
 
@@ -182,7 +188,10 @@ def encodeResponse(result, id_, version):
         """
 
         error_result = {}
-        error_result['message'] = str(result.value.strerr)
+        try:
+            error_result['message'] = str(result.value.strerror)
+        except AttributeError:
+            error_result['message'] = str(result.value)
 
         if isinstance(result.value, TypeError):
             error_result['code'] = INVALID_PARAMS
@@ -229,10 +238,11 @@ class JSONRPCError(Exception):
 
     @TODO str, repr etc.?
     """
-    def __init__(self, strerr, errno=INTERNAL_ERROR, data=None):
+    def __init__(self, strerror, errno=INTERNAL_ERROR, data=None, id_=None,
+                 version=VERSION_1):
         """
-        @type strerr: str
-        @param strerr: Description of the error
+        @type strerror: str
+        @param strerror: Description of the error
 
         @type errno: int
         @param errno: Error code
@@ -240,6 +250,8 @@ class JSONRPCError(Exception):
         @type data: mixed
         @param data: Whatever additional data we want to pass
         """
-        self.strerr = strerr
+        self.strerror = strerror
         self.errno = errno
         self.data = data
+        self.id_ = id_
+        self.version = version
