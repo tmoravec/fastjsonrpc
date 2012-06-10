@@ -167,12 +167,17 @@ def encodeResponse(result, id_, version):
 
         @return dict that will be serialized
         """
+
         error_result = {}
         error_result['message'] = str(result.value)
-        try:
-            error_result['code'] = result.value.errno
-        except AttributeError:
-            error_result['code'] = INTERNAL_ERROR
+
+        if isinstance(result.value, TypeError):
+            error_result['code'] = INVALID_PARAMS
+        else:
+            try:
+                error_result['code'] = result.value.errno
+            except AttributeError:
+                error_result['code'] = INTERNAL_ERROR
 
         try:
             error_result['data'] = result.value.data
