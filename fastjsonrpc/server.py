@@ -27,7 +27,6 @@ Example usage:
 from twisted.web import resource
 from twisted.web import server
 from twisted.internet.defer import maybeDeferred
-from twisted.python.failure import Failure
 
 import jsonrpc
 
