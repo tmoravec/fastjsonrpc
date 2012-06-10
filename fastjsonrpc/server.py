@@ -64,7 +64,8 @@ class JSONRPCServer(resource.Resource):
             request_content = request.content.read()
             request_dict = jsonrpc.decodeRequest(request_content)
 
-            function = getattr(self, 'jsonrpc_%s' % request_dict['method'], None)
+            function = getattr(self, 'jsonrpc_%s' % request_dict['method'],
+                               None)
             if callable(function):
 
                 # Here we actually call the function
