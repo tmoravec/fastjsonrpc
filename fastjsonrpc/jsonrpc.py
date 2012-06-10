@@ -193,9 +193,10 @@ def encodeResponse(result, id_, version):
                 error_result['code'] = INTERNAL_ERROR
 
         try:
-            error_result['data'] = result.value.data
+            if result.value.data is not None:
+                error_result['data'] = result.value.data
         except AttributeError:
-            error_result['data'] = None
+            pass
 
         return error_result
 
