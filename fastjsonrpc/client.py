@@ -20,9 +20,6 @@ JSONRPC Client
 
 Provides a Proxy class, that can be used for calling remote functions via
 JSON-RPC.
-
-Example usage:
-@TODO
 """
 
 from zope.interface import implements
@@ -39,13 +36,14 @@ import jsonrpc
 
 class ReceiverProtocol(Protocol):
     """
-    Protocol for receiving the server response. Instance of this will be
-    passed to the Response's deliverBody method.
+    Protocol for receiving the server response. It's only purpose is to get the
+    HTTP request body. Instance of this will be passed to the Response's
+    deliverBody method.
     """
     def __init__(self, finished):
         """
-        @type finished: Deferred
-        @param finished: Deferred, to be called when we've got all the data.
+        @type finished: t.i.d.Deferred
+        @param finished: Deferred to be called when we've got all the data.
         """
 
         self.body = ''
@@ -55,7 +53,7 @@ class ReceiverProtocol(Protocol):
         """
         Appends data to the internal buffer.
 
-        @type data: str
+        @type data: str (bytearray, buffer?)
         @param data: Data from server. 'Should' be (a part of) JSON
         """
 
@@ -63,9 +61,9 @@ class ReceiverProtocol(Protocol):
 
     def connectionLost(self, reason):
         """
-        Fires the 'finished's' callback with data we've received.
+        Fires the finished's callback with data we've received.
 
-        @type reason: Failure
+        @type reason: t.p.f.Failure
         @param reason: Failure, wrapping several potential reasons. It can
         wrap t.w.c.ResponseDone, in which case everything is OK. It can wrap
         t.w.h.PotentialDataLoss. Or it can wrap an Exception, in case of an
@@ -102,7 +100,7 @@ class StringProducer(object):
 
 class Proxy(object):
     """
-    A proxy to a specific JSON-RPC server. Pass the server URL to the
+    A proxy to one specific JSON-RPC server. Pass the server URL to the
     constructor and call proxy.callRemote('method', *args) to call 'method' with
     *args.
     """
@@ -127,7 +125,8 @@ class Proxy(object):
         @type response: t.w.c.Response
         @param response: Response object from the call
 
-        @return Deferred, that will fire callback with body of the response (as
+        @rtype: t.i.d.Deferred
+        @return: Deferred, that will fire callback with body of the response (as
         string)
         """
 
@@ -137,9 +136,9 @@ class Proxy(object):
 
     def callRemote(self, method, *args):
         """
-        Remotely calls method, with args. Given that we keep reference to the
-        call via the Deferred, there's no need for id. It will coin some random
-        anyway, just to satisfy the spec.
+        Remotely calls the method, with args. Given that we keep reference to
+        the call via the Deferred, there's no need for id. It will coin some
+        random anyway, just to satisfy the spec.
 
         @type method: str
         @param method: Method name
@@ -147,7 +146,8 @@ class Proxy(object):
         @type *args: list
         @param *args: List of agruments for the method.
 
-        @return Deferred, that will fire with Response
+        @rtype: t.i.d.Deferred
+        @return: Deferred, that will fire with Response
         @TODO support **kwargs
         """
 

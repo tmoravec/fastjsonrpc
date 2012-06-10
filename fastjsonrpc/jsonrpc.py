@@ -12,6 +12,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+
+================
+JSON-RPC library
+================
+
+Provides functions for encoding and decoding the JSON into functions, params
+etc. and other JSON-RPC related stuff like constants.
 """
 
 try:
@@ -44,7 +52,7 @@ ID_MAX = 2**31 - 1  # 32-bit maxint
 
 def encodeRequest(method, args, id_=0, version=VERSION_1):
     """
-    Returns a JSON object representation of the request.
+    Return a JSON object representation of the request.
 
     @type id_: int or None
     @param id_: request ID. If None, a notification will be sent. If 0 (the
@@ -54,12 +62,14 @@ def encodeRequest(method, args, id_=0, version=VERSION_1):
     @param method: Method name
 
     @type args: list
-    @param args: List of arguments for the method
+    @param args: List of arguments for the method. Note that packing of the
+    arguments is up to the caller!
 
     @type version: float
-    @param version: Which JSON-RPC version to use? Defaults to 1.0
+    @param version: Which JSON-RPC version to use? Defaults to version 1.
 
-    @return string JSON representation of the request
+    @rtype: str
+    @return: JSON representation of the request
     """
 
     request = {}
@@ -78,12 +88,16 @@ def encodeRequest(method, args, id_=0, version=VERSION_1):
 
 def decodeResponse(json_response):
     """
-    Parses response JSON and returns what the server responded.
+    Parse the response JSON and return what the called function returned. Raise
+    an exception in the case there was an error.
 
     @type json_response: str
     @param json_response: JSON from the server
 
-    @TODO handle exceptions. Create a custom exception for this?
+    @rtype: mixed
+    @return: What the function returned
+
+    @TODO handle errors properly.
     """
 
     response = json.loads(json_response)
@@ -103,7 +117,8 @@ def decodeRequest(request):
     @type request: str
     @param request: The JSON encoded request
 
-    @return dict, containing id, method, params and eventually jsonrpc
+    @rtype: dict
+    @return: dict, containing id, method, params and (if present) jsonrpc
     """
 
     try:
@@ -151,7 +166,8 @@ def encodeResponse(result, id_, version):
     @type version: float
     @param version: JSON-RPC version
 
-    @return str JSON-encoded response
+    @rtype: str
+    @return: JSON-encoded response
     """
 
     def getErrorResponse(result):
@@ -161,7 +177,8 @@ def encodeResponse(result, id_, version):
         @type result: t.p.f.Failure
         @param result: Failure instance to be parsed
 
-        @return dict that will be serialized
+        @rtype: dict
+        @return: dict that can be serialized to JSON
         """
 
         error_result = {}
@@ -208,11 +225,19 @@ def encodeResponse(result, id_, version):
 class JSONRPCError(Exception):
     """
     JSON-RPC specific error
+
+    @TODO str, repr etc.?
     """
     def __init__(self, strerr, errno=INTERNAL_ERROR, data=None):
         """
-        @type code: int
-        @param code: Error code
+        @type strerr: str
+        @param strerr: Description of the error
+
+        @type errno: int
+        @param errno: Error code
+
+        @type data: mixed
+        @param data: Whatever additional data we want to pass
         """
         self.strerr = strerr
         self.errno = errno
