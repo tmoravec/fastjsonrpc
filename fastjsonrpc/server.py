@@ -109,7 +109,7 @@ class JSONRPCServer(resource.Resource):
             result = result.value
         encoded = jsonrpc.encodeResponse(result, id_, version)
 
-        request.setHeader('Content-Type', 'text/json')
+        request.setHeader('Content-Type', 'application/json')
         request.setHeader('Content-Length', len(encoded))
         request.write(encoded)
         request.finish()

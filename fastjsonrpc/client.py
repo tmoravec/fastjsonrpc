@@ -155,7 +155,7 @@ class Proxy(object):
 
         agent = Agent(reactor)
         body = StringProducer(json_request)
-        headers = Headers({'Content-Type': ['text/json'],
+        headers = Headers({'Content-Type': ['application/json'],
                            'Content-Length': [str(body.length)]})
 
         d = agent.request('POST', self.url, headers, body)
