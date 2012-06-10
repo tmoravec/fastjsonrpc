@@ -138,10 +138,13 @@ def decodeRequest(request):
         else:
             decoded['jsonrpc'] = VERSION_1
 
-        if not isinstance(decoded['method'], types.StringTypes):
+        if (not 'method' in decoded or
+                not isinstance(decoded['method'], types.StringTypes)):
             raise JSONRPCError('Invalid method type', INVALID_REQUEST)
 
-        if not isinstance(decoded['params'], (types.ListType, types.TupleType)):
+        if ('params' in decoded and
+                not isinstance(decoded['params'],
+                               (types.ListType, types.TupleType))):
             raise JSONRPCError('Invalid params type', INVALID_REQUEST)
 
     except JSONRPCError as e:
