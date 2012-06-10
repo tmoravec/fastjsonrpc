@@ -131,9 +131,9 @@ def decodeRequest(request):
             assert isinstance(decoded['id'], types.IntType), \
                               'Invalid id type: %s' % type(decoded['id'])
 
-    except ValueError as e:
+    except ValueError:
         raise JSONRPCError(PARSE_ERROR)
-    except AssertionError as e:
+    except AssertionError:
         raise JSONRPCError(INVALID_REQUEST)
 
     return decoded
