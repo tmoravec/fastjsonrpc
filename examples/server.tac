@@ -7,6 +7,7 @@ from fastjsonrpc.server import JSONRPCServer
 from twisted.web.server import Site
 from twisted.application import service
 from twisted.application import internet
+from twisted.enterprise import adbapi
 
 
 class Example(JSONRPCServer):
@@ -16,8 +17,21 @@ class Example(JSONRPCServer):
     def jsonrpc_add(self, a, b):
         return a + b
 
+    def jsonrpc_mysql_first_user(self):
+        def capitalize(sql_result):
+            if sql_result:
+                return sql_result[0][0].upper()
+            else:
+                return None
 
-application = service.Application("Example JSON-RPC server")
+        sql = 'SELECT User FROM user LIMIT 1'
+        dbpool = adbapi.ConnectionPool('MySQLdb', 'localhost', user='root',
+                                       passwd='', db='mysql')
+        d = dbpool.runQuery(sql)
+        d.addCallback(capitalize)
+        return d
+
+application = service.Application('Example JSON-RPC server')
 root = Example()
 site = Site(root)
 
