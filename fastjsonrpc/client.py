@@ -147,7 +147,7 @@ class Proxy(object):
         @param *args: List of agruments for the method.
 
         @rtype: t.i.d.Deferred
-        @return: Deferred, that will fire with Response
+        @return: Deferred, that will fire with whatever the 'method' returned.
         @TODO support **kwargs
         """
 
