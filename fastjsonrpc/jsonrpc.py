@@ -80,7 +80,7 @@ def jloads(json_string):
     else:
         return json.loads(json_string)
 
-def encodeRequest(method, args, id_=0, version=VERSION_1):
+def encodeRequest(method, args=None, id_=0, version=VERSION_1):
     """
     Return a JSON object representation of the request.
 
@@ -104,7 +104,9 @@ def encodeRequest(method, args, id_=0, version=VERSION_1):
 
     request = {}
     request['method'] = method
-    request['params'] = args
+
+    if args is not None:
+        request['params'] = args
 
     if id_ is not None:
         if id_ == 0:
