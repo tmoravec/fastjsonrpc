@@ -135,6 +135,9 @@ def decodeResponse(json_response):
 
     response = jloads(json_response)
 
+    if 'result' in response and 'error' in response:
+        raise ValueError('Not a valid JSON-RPC response')
+
     if 'result' in response and response['result'] is not None:
         return response['result']
 
