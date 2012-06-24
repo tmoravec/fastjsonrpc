@@ -241,7 +241,7 @@ def _getErrorResponse(exception):
 
     return error_result
 
-def encodeResponse(result, id_, version):
+def encodeResponse(result, id_, version=VERSION_1):
     """
     Encodes the server response into JSON.
 
@@ -267,7 +267,7 @@ def encodeResponse(result, id_, version):
     response['id'] = id_
 
     if version == VERSION_2:
-        response['jsonrpc'] = version
+        response['jsonrpc'] = "2.0"
 
     if error_result:
         response['error'] = error_result
