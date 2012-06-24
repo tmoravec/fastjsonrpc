@@ -239,6 +239,7 @@ class TestEncodeResponse(TestCase):
         expected += '"code": -32601}}'
         self.assertEquals(result, expected)
 
+
 class TestDecodeResponse(TestCase):
 
     def test_noResponse(self):
@@ -269,3 +270,6 @@ class TestDecodeResponse(TestCase):
         response += '"result": "abcd"}'
         self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
 
+    def test_emptyResult(self):
+        response = '{"result": null}'
+        self.assertEquals(None, jsonrpc.decodeResponse(response))
