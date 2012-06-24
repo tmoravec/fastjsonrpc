@@ -7,6 +7,7 @@ import re
 from fastjsonrpc import jsonrpc
 from fastjsonrpc.jsonrpc import JSONRPCError
 from twisted.trial.unittest import TestCase
+from twisted.python.failure import Failure
 
 class TestEncodeRequest(TestCase):
 
@@ -180,3 +181,61 @@ class TestVerifyRequest(TestCase):
     def test_versionStr(self):
         request = {'method': 'aa', 'jsonrpc': '2'}
         self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+
+class TestEncodeResponse(TestCase):
+
+    def test_noResponseNoVersion(self):
+        result = jsonrpc.encodeResponse(None, 123)
+        expected = '{"error": null, "id": 123, "result": null}'
+        self.assertEquals(result, expected)
+
+    def test_noResponseV2(self):
+        result = jsonrpc.encodeResponse(None, 123, 2)
+        expected = '{"jsonrpc": "2.0", "id": 123, "result": null}'
+        self.assertEquals(result, expected)
+
+    def test_responseStr(self):
+        result = jsonrpc.encodeResponse("result", 123)
+        expected = '{"error": null, "id": 123, "result": "result"}'
+        self.assertEquals(result, expected)
+
+    def test_responseInt(self):
+        result = jsonrpc.encodeResponse(12321, 123)
+        expected = '{"error": null, "id": 123, "result": 12321}'
+        self.assertEquals(result, expected)
+
+    def test_noId(self):
+        result = jsonrpc.encodeResponse(None, None)
+        expected = '{"error": null, "id": null, "result": null}'
+        self.assertEquals(result, expected)
+
+    def test_idStr(self):
+        result = jsonrpc.encodeResponse(None, '1b3')
+        expected = '{"error": null, "id": "1b3", "result": null}'
+        self.assertEquals(result, expected)
+
+    def test_responseException(self):
+        response = ValueError('The method raised an exception!')
+        result = jsonrpc.encodeResponse(response, 123)
+        expected = '{"result": null, "id": 123, '
+        expected += '"error": {"message": "The method raised an exception!", '
+        expected += '"code": -32603}}'
+        self.assertEquals(result, expected)
+
+    def test_invalidParams(self):
+        response = TypeError('Invalid params')
+        result = jsonrpc.encodeResponse(response, 123)
+        expected = '{"result": null, "id": 123, '
+        expected += '"error": {"message": "Invalid params", '
+        expected += '"code": -32602}}'
+        self.assertEquals(result, expected)
+
+    def test_methodNotFount(self):
+        response = JSONRPCError('Method aa not found', jsonrpc.METHOD_NOT_FOUND)
+        result = jsonrpc.encodeResponse(response, 123)
+        expected = '{"result": null, "id": 123, '
+        expected += '"error": {"message": "Method aa not found", '
+        expected += '"code": -32601}}'
+        self.assertEquals(result, expected)
+
