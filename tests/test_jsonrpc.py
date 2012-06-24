@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath('..'))
 import re
 
 from fastjsonrpc import jsonrpc
+from fastjsonrpc.jsonrpc import JSONRPCError
 from twisted.trial.unittest import TestCase
 
 class TestEncodeRequest(TestCase):
@@ -132,3 +133,50 @@ class TestDecodeRequest(TestCase):
         expected = {'method': 'abc', 'params': ['p1', 12321], 'jsonrpc': 2.0,
                     'id': 123}
         self.assertEquals(result, expected)
+
+
+class TestVerifyRequest(TestCase):
+
+    def test_onlyMethod(self):
+        request = {'method': 'abc'}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_onlyId(self):
+        request = {'id': 123}
+        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+
+    def test_onlyVersion(self):
+        request = {'jsonrpc': 2}
+        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+
+    def test_onlyParams(self):
+        request = {'params': [123, 'afaf']}
+        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+
+    def test_paramsNotSequence(self):
+        request = {'method': 'aa', 'params': 123}
+        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+
+    def test_paramsSequence(self):
+        request = {'method': 'aa', 'params': ['abcdef', 12321]}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_idInt(self):
+        request = {'method': 'aa', 'id': 1}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_idStr(self):
+        request = {'method': 'aa', 'id': '1b3'}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_versionInt(self):
+        request = {'method': 'aa', 'jsonrpc': 2}
+        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+
+    def test_versionFloat(self):
+        request = {'method': 'aa', 'jsonrpc': 2.0}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_versionStr(self):
+        request = {'method': 'aa', 'jsonrpc': '2'}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
