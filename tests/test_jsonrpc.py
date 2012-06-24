@@ -239,3 +239,33 @@ class TestEncodeResponse(TestCase):
         expected += '"code": -32601}}'
         self.assertEquals(result, expected)
 
+class TestDecodeResponse(TestCase):
+
+    def test_noResponse(self):
+        self.assertRaises(Exception, jsonrpc.decodeResponse, '')
+
+    def test_malformedResponse(self):
+        self.assertRaises(Exception, jsonrpc.decodeResponse, '{"respons')
+
+    def test_onlyId(self):
+        response = '{"id": 123}'
+        self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
+
+    def test_idVersion(self):
+        response = '{"id": 123, "jsonrpc": "2.0"}'
+        self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
+
+    def test_onlyResult(self):
+        response = '{"result": "abcd"}'
+        ret = 'abcd'
+        self.assertEquals(ret, jsonrpc.decodeResponse(response))
+
+    def test_onlyError(self):
+        response = '{"error": {"message": "some error", "code": 123}}'
+        self.assertRaises(Exception, jsonrpc.decodeResponse, response)
+
+    def test_errorAndResult(self):
+        response = '{"error": {"message": "some error", "code": 123}, '
+        response += '"result": "abcd"}'
+        self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
+
