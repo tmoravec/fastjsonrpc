@@ -75,3 +75,60 @@ class TestEncodeRequest(TestCase):
         expected += '"id": 123}'
         self.assertEquals(result, expected)
 
+
+class TestDecodeRequest(TestCase):
+
+    def test_empty(self):
+        self.assertRaises(Exception, jsonrpc.decodeRequest, '')
+
+    def test_malformed(self):
+        self.assertRaises(Exception, jsonrpc.decodeRequest, '{"method": "aa')
+
+    def test_onlyMethod(self):
+        result = jsonrpc.decodeRequest('{"method": "aa"}')
+        expected = {'method': 'aa'}
+        self.assertEquals(result, expected)
+
+    def test_onlyParams(self):
+        request = '{"params": "abcdef"}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'params': 'abcdef'}
+        self.assertEquals(result, expected)
+
+    def test_onlyIdInt(self):
+        request = '{"id": 123}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'id': 123}
+        self.assertEquals(result, expected)
+
+    def test_onlyIdStr(self):
+        request = '{"id": "1b3"}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'id': '1b3'}
+        self.assertEquals(result, expected)
+
+    def test_onlyVersionInt(self):
+        request = '{"jsonrpc": 1}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'jsonrpc': 1}
+        self.assertEquals(result, expected)
+
+    def test_onlyVersionFloat(self):
+        request = '{"jsonrpc": 2.0}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'jsonrpc': 2.0}
+        self.assertEquals(result, expected)
+
+    def test_onlyVersionStr(self):
+        request = '{"jsonrpc": "2"}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'jsonrpc': "2"}
+        self.assertEquals(result, expected)
+
+    def test_combined(self):
+        request = '{"method": "abc", "params": ["p1", 12321], "jsonrpc": 2.0, '
+        request += '"id": 123}'
+        result = jsonrpc.decodeRequest(request)
+        expected = {'method': 'abc', 'params': ['p1', 12321], 'jsonrpc': 2.0,
+                    'id': 123}
+        self.assertEquals(result, expected)
