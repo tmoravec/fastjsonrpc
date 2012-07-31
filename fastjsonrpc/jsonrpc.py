@@ -135,8 +135,9 @@ def decodeResponse(json_response):
 
     response = jloads(json_response)
 
-    if 'result' in response and 'error' in response:
-        raise ValueError('Not a valid JSON-RPC response')
+    if 'jsonrpc' in response and response['jsonrpc'] == "2.0":
+        if 'result' in response and 'error' in response:
+            raise ValueError('Not a valid JSON-RPC response')
 
     if 'result' in response:
         return response['result']
