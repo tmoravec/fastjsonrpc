@@ -59,14 +59,38 @@ class TestRender(TestCase):
 
     def setUp(self):
         self.srv = DummyServer()
-        self.json_echo = StringIO('{"method": "echo", "id": 1, ' +
-                                  '"params": ["ab"]}')
-        self.json_sql = StringIO('{"method": "sql", "id": 1}')
+
+    def test_emptyRequest(self):
+        request = DummyRequest([''])
+        request.content = StringIO('')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": null, "error": ' + \
+                       '{"message": "Failed to parse JSON", "code": -32700}}'
+            self.assertEquals(expected, request.written[0])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_malformed(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "sql", "id')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": null, "error": ' + \
+                       '{"message": "Failed to parse JSON", "code": -32700}}'
+            self.assertEquals(expected, request.written[0])
+
+        d.addCallback(rendered)
+        return d
 
 
     def test_contentType(self):
         request = DummyRequest([''])
-        request.content = self.json_echo
+        request.content = StringIO('{"method": "echo", "id": 1, ' +
+                                   '"params": ["ab"]}')
         d = _render(self.srv, request)
 
         def rendered(_):
@@ -78,7 +102,8 @@ class TestRender(TestCase):
 
     def test_contentLength(self):
         request = DummyRequest([''])
-        request.content = self.json_echo
+        request.content = StringIO('{"method": "echo", "id": 1, ' +
+                                   '"params": ["ab"]}')
         d = _render(self.srv, request)
 
         def rendered(_):
@@ -90,7 +115,8 @@ class TestRender(TestCase):
 
     def test_echoOk(self):
         request = DummyRequest([''])
-        request.content = self.json_echo
+        request.content = StringIO('{"method": "echo", "id": 1, ' +
+                                   '"params": ["ab"]}')
         d = _render(self.srv, request)
 
         def rendered(_):
@@ -102,7 +128,7 @@ class TestRender(TestCase):
 
     def test_sqlOk(self):
         request = DummyRequest([''])
-        request.content = self.json_sql
+        request.content = StringIO('{"method": "sql", "id": 1}')
         d = _render(self.srv, request)
 
         def rendered(_):
@@ -111,3 +137,33 @@ class TestRender(TestCase):
 
         d.addCallback(rendered)
         return d
+
+    def test_noSuchMethod(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "aaaa", "id": 1}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": 1, "error": ' + \
+                       '{"message": "Method aaaa not found", ' + \
+                       '"code": -32601}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_wrongParams(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "sql", "id": 1, ' +
+                                   '"params": ["aa", "bb"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": 1, "error": {"message": ' + \
+                       '"jsonrpc_sql() takes exactly 1 argument (3 given)"' + \
+                       ', "code": -32602}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
