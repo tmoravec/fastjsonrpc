@@ -39,6 +39,31 @@ class JSONRPCServer(resource.Resource):
 
     isLeaf = 1
 
+    def noSuchMethod(self, request_dict):
+        """
+        Raise JSONRPCError with all info we can get from the request
+
+        @type request_dict: dict
+        @param request_dict: Parsed request from client
+
+        @exception jsonrpc.JSONRPCError
+        """
+
+        msg = 'Method %s not found' % request_dict['method']
+
+        if 'id' in request_dict:
+            id_ = request_dict['id']
+        else:
+            id_ = None
+
+        if 'jsonrpc' in request_dict:
+            version = request_dict['jsonrpc']
+        else:
+            version = None
+
+        raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
+                                   version=version)
+
 
     def render(self, request):
         """
@@ -79,8 +104,7 @@ class JSONRPCServer(resource.Resource):
                           request_dict['jsonrpc'])
 
             else:
-                msg = 'Method %s not found' % request_dict['method']
-                raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND)
+                self.noSuchMethod(request_dict)
 
         except jsonrpc.JSONRPCError as e:
             f = Failure(e)
