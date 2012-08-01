@@ -138,12 +138,16 @@ def decodeResponse(json_response):
     if 'jsonrpc' in response and response['jsonrpc'] == "2.0":
         if 'result' in response and 'error' in response:
             raise ValueError('Not a valid JSON-RPC response')
-
-    if 'result' in response:
-        return response['result']
+    else:
+        if ('result' in response and response['result'] is not None and
+                'error' in response and response['error'] is not None):
+            raise ValueError('Not a valid JSON-RPC response')
 
     if 'error' in response and response['error'] is not None:
         raise Exception(response['error'])
+
+    if 'result' in response:
+        return response['result']
 
     raise ValueError('Not a valid JSON-RPC response')
 

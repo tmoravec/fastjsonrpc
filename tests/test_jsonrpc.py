@@ -265,9 +265,24 @@ class TestDecodeResponse(TestCase):
         response = '{"error": {"message": "some error", "code": 123}}'
         self.assertRaises(Exception, jsonrpc.decodeResponse, response)
 
+    def test_resultAndErrorNull(self):
+        response = '{"result": "abcd", "error": null}'
+        ret = 'abcd'
+        self.assertEquals(ret, jsonrpc.decodeResponse(response))
+
+    def test_errorAndResultNull(self):
+        response = '{"result": null, "error": {"message": "some error", '
+        response += '"code": 123}}'
+        self.assertRaises(Exception, jsonrpc.decodeResponse, response)
+
     def test_errorAndResult(self):
         response = '{"error": {"message": "some error", "code": 123}, '
         response += '"result": "abcd"}'
+        self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
+
+    def test_errorAndResult2(self):
+        response = '{"error": {"message": "some error", "code": 123}, '
+        response += '"result": "abcd", "jsonrpc": "2.0"}'
         self.assertRaises(ValueError, jsonrpc.decodeResponse, response)
 
     def test_emptyResult(self):
