@@ -194,6 +194,9 @@ def verifyRequest(decoded):
         else:
             decoded['jsonrpc'] = VERSION_1
 
+        if 'id' not in decoded:
+            decoded['id'] = None
+
         if (not 'method' in decoded or
                 not isinstance(decoded['method'], types.StringTypes)):
             raise JSONRPCError('Invalid method type', INVALID_REQUEST)

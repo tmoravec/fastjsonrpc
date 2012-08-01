@@ -66,9 +66,7 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            expected = '{"result": null, "id": null, "error": ' + \
-                       '{"message": "Failed to parse JSON", "code": -32700}}'
-            self.assertEquals(expected, request.written[0])
+            self.assertEquals(request.written, [])
 
         d.addCallback(rendered)
         return d
@@ -79,13 +77,10 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            expected = '{"result": null, "id": null, "error": ' + \
-                       '{"message": "Failed to parse JSON", "code": -32700}}'
-            self.assertEquals(expected, request.written[0])
+            self.assertEquals(request.written, [])
 
         d.addCallback(rendered)
         return d
-
 
     def test_contentType(self):
         request = DummyRequest([''])
@@ -138,13 +133,61 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
-    def test_noSuchMethod(self):
+    def test_notificationV1(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "sql"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            self.assertEquals(request.written, [])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_notificationV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "sql", "jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            self.assertEquals(request.written, [])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_noSuchMethodNoId(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "aaaa"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            self.assertEquals(request.written, [])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_noSuchMethodV1(self):
         request = DummyRequest([''])
         request.content = StringIO('{"method": "aaaa", "id": 1}')
         d = _render(self.srv, request)
 
         def rendered(_):
             expected = '{"result": null, "id": 1, "error": ' + \
+                       '{"message": "Method aaaa not found", ' + \
+                       '"code": -32601}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_noSuchMethodV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "aaaa", "id": 1, ' + \
+                                   '"jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": 1, "error": ' + \
                        '{"message": "Method aaaa not found", ' + \
                        '"code": -32601}}'
             self.assertEquals(request.written[0], expected)

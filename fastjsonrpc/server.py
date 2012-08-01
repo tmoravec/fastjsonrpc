@@ -64,7 +64,6 @@ class JSONRPCServer(resource.Resource):
         raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
                                    version=version)
 
-
     def render(self, request):
         """
         This is the 'main' RPC method. This will always be called when a request
@@ -129,8 +128,14 @@ class JSONRPCServer(resource.Resource):
         @param version: JSON-RPC version
         """
 
+        if id_ is None:
+            # Notification.. Don't return anything
+            request.finish()
+            return
+
         if isinstance(result, Failure):
             result = result.value
+
         encoded = jsonrpc.encodeResponse(result, id_, version)
 
         request.setHeader('Content-Type', 'application/json')
