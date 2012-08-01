@@ -39,7 +39,7 @@ class JSONRPCServer(resource.Resource):
 
     isLeaf = 1
 
-    def noSuchMethod(self, request_dict):
+    def _noSuchMethod(self, request_dict):
         """
         Raise JSONRPCError with all info we can get from the request
 
@@ -72,7 +72,7 @@ class JSONRPCServer(resource.Resource):
 
         This method will call the appropriate exposed method (i.e. one
         starting with 'jsonrpc_) and it will pass the (async) result to
-        self.cbResult.
+        self._cbResult.
 
         @type request: t.w.s.Request
         @param request: Request from client
@@ -100,19 +100,19 @@ class JSONRPCServer(resource.Resource):
                 else:
                     d = maybeDeferred(function)
 
-                d.addBoth(self.cbResult, request, request_dict['id'],
+                d.addBoth(self._cbResult, request, request_dict['id'],
                           request_dict['jsonrpc'])
 
             else:
-                self.noSuchMethod(request_dict)
+                self._noSuchMethod(request_dict)
 
         except jsonrpc.JSONRPCError as e:
             f = Failure(e)
-            self.cbResult(f, request, f.value.id_, f.value.version)
+            self._cbResult(f, request, f.value.id_, f.value.version)
 
         return server.NOT_DONE_YET
 
-    def cbResult(self, result, request, id_, version=jsonrpc.VERSION_1):
+    def _cbResult(self, result, request, id_, version=jsonrpc.VERSION_1):
         """
         'callback with result'. Manages returning the methods return value(s).
 
