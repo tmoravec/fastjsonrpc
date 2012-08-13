@@ -108,6 +108,33 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
+    def test_idStrV1(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": "abcd", ' +
+                                   '"params": ["ab"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"error": null, "id": "abcd", "result": "ab"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_idStrV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": "abcd", ' +
+                                   '"params": ["ab"], "jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": "abcd", ' + \
+                       '"result": "ab"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
     def test_echoOk(self):
         request = DummyRequest([''])
         request.content = StringIO('{"method": "echo", "id": 1, ' +
