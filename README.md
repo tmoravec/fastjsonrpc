@@ -10,7 +10,8 @@ as possible.
 Features
 ============
 
-* Support for HTTP as protocol, more might come in the future.
+* Support for HTTP and HTTPS as protocol (via twisted.web), more might come
+  in the future.
 
 * Full standards compliance (in progress :-) ).
 
