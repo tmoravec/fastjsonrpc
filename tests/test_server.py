@@ -148,13 +148,39 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
-    def test_sqlOk(self):
+    def test_echoOkV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": 1, ' +
+                                   '"params": ["ab"], "jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": 1, "result": "ab"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_sqlOkV1(self):
         request = DummyRequest([''])
         request.content = StringIO('{"method": "sql", "id": 1}')
         d = _render(self.srv, request)
 
         def rendered(_):
             expected = '{"error": null, "id": 1, "result": ["root"]}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_sqlOkV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"jsonrpc": "2.0", "method": "sql", '
+                                   '"id": 1}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": 1, "result": ["root"]}'
             self.assertEquals(request.written[0], expected)
 
         d.addCallback(rendered)
