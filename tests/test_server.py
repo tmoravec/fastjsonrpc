@@ -135,6 +135,74 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
+    def test_caseSensitiveMethodV1(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "ECHO", "id": "ABCD", ' +
+                                   '"params": ["AB"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": "ABCD", "error": {"message": ' +\
+                       '"Method ECHO not found", "code": -32601}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_caseSensitiveParamsV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": "ABCD", ' +
+                                   '"params": ["AB"], "jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": "ABCD", "result": "AB"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_invalidMethodCaseSensitive(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"METHOD": "echo", "id": "ABCD", ' +
+                                   '"params": ["AB"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": "ABCD", "error": ' + \
+                       '{"message": "Invalid method type", "code": -32600}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_invalidIdCaseSensitive(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "ID": "ABCD", ' +
+                                   '"params": ["AB"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            self.assertEquals(request.written, [])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_invalidParamsCaseSensitive(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": "ABCD", ' +
+                                   '"PARAMS": ["AB"]}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": "ABCD", "error": ' + \
+                       '{"message": "jsonrpc_echo() takes exactly 2 ' + \
+                       'arguments (1 given)", "code": -32602}}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
     def test_echoOk(self):
         request = DummyRequest([''])
         request.content = StringIO('{"method": "echo", "id": 1, ' +
