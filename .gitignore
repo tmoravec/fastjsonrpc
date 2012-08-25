@@ -7,3 +7,5 @@ fastjsonrpc/pylint.rc
 examples/twistd.pid
 tags
 _trial_temp
+tests/profile.data
+pylint*
