@@ -104,7 +104,7 @@ class TestProxy(TestCase):
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
 
-    def test_bodyFromResponse(self):
+    def test_bodyFromResponseProtocolBody(self):
         data = 'some random string'
 
         proxy = Proxy('', '')
@@ -113,6 +113,19 @@ class TestProxy(TestCase):
 
         def finished(_):
             self.assertEquals(response.protocol.body, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_bodyFromResponseDeferred(self):
+        data = 'some random string'
+
+        proxy = Proxy('', '')
+        response = DummyResponse(data)
+        d = proxy.bodyFromResponse(response)
+
+        def finished(result):
+            self.assertEquals(result, data)
 
         d.addCallback(finished)
         return d
