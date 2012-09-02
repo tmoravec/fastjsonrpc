@@ -6,11 +6,9 @@ from StringIO import StringIO
 from twisted.trial.unittest import TestCase
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.test.test_web import DummyRequest
-from twisted.enterprise import adbapi
 from twisted.internet.defer import succeed
 
-from fastjsonrpc.server import JSONRPCServer
-
+from dummyserver import DummyServer
 
 def _render(resource, request):
     result = resource.render(request)
@@ -25,23 +23,6 @@ def _render(resource, request):
             return request.notifyFinish()
     else:
         raise ValueError('Unexpected return value: %r' % (result,))
-
-
-class DummyServer(JSONRPCServer):
-
-    def jsonrpc_echo(self, data):
-        return data
-
-    def jsonrpc_sql(self):
-        def firstRow(sql_result):
-            return sql_result[0]
-
-        sql = 'SELECT User FROM user LIMIT 1'
-        dbpool = adbapi.ConnectionPool('MySQLdb', 'localhost', user='root',
-                                       passwd='', db='mysql')
-        d = dbpool.runQuery(sql)
-        d.addCallback(firstRow)
-        return d
 
 
 class TestRender(TestCase):
