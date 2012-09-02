@@ -4,10 +4,16 @@ sys.path.insert(0, os.path.abspath('..'))
 
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
+from twisted.web.server import Site
+from twisted.internet import reactor
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
 from fastjsonrpc.client import Proxy
+from fastjsonrpc import jsonrpc
+
+from dummyserver import DummyServer
+
 
 class TestReceiverProtocol(TestCase):
 
@@ -96,6 +102,14 @@ class DummyResponse(object):
 
 class TestProxy(TestCase):
 
+    def setUp(self):
+        site = Site(DummyServer())
+        self.port = reactor.listenTCP(0, site)
+        self.portNumber = self.port._realPortNumber
+
+    def tearDown(self):
+        self.port.stopListening()
+
     def test_init(self):
         url = 'http://example.org/abcdef'
         version = '2.0'
@@ -130,3 +144,28 @@ class TestProxy(TestCase):
         d.addCallback(finished)
         return d
 
+    def test_callRemoteV1(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1)
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_callRemoteV2(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_2)
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
