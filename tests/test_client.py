@@ -144,7 +144,7 @@ class TestProxy(TestCase):
         d.addCallback(finished)
         return d
 
-    def test_callRemoteV1(self):
+    def test_callRemoteV1Ok(self):
         data = 'some random string'
 
         addr = 'http://localhost:%s' % self.portNumber
@@ -157,7 +157,7 @@ class TestProxy(TestCase):
         d.addCallback(finished)
         return d
 
-    def test_callRemoteV2(self):
+    def test_callRemoteV2Ok(self):
         data = 'some random string'
 
         addr = 'http://localhost:%s' % self.portNumber
@@ -169,3 +169,33 @@ class TestProxy(TestCase):
 
         d.addCallback(finished)
         return d
+
+    def test_callRemoteV1NoMethod(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1)
+        d = proxy.callRemote('nosuchmethod')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            self.assertEquals(result.strerror, 'Method nosuchmethod not found')
+            self.assertEquals(result.errno, jsonrpc.METHOD_NOT_FOUND)
+            self.assertEquals(result.version, jsonrpc.VERSION_1)
+
+        e.addCallback(finished)
+        return e
+
+    def test_callRemoteV2InvalidParams(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_2)
+        d = proxy.callRemote('echo', 'abc', 'def')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            msg = 'jsonrpc_echo() takes exactly 2 arguments (3 given)'
+            self.assertEquals(result.strerror, msg)
+            self.assertEquals(result.errno, jsonrpc.INVALID_PARAMS)
+            self.assertEquals(result.version, unicode(jsonrpc.VERSION_2))
+
+        e.addCallback(finished)
+        return e
+
