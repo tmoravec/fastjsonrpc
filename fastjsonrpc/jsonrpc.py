@@ -130,7 +130,6 @@ def decodeResponse(json_response):
     @return: What the function returned
 
     @raise ValueError: If the response is not valid JSON-RPC response.
-    @TODO Do more checks and handle errors properly.
     """
 
     response = jloads(json_response)
@@ -144,7 +143,16 @@ def decodeResponse(json_response):
             raise ValueError('Not a valid JSON-RPC response')
 
     if 'error' in response and response['error'] is not None:
-        raise Exception(response['error'])
+        e = JSONRPCError(response['error']['message'],
+                         response['error']['code'])
+        if 'jsonrpc' in response:
+            e.version = response['jsonrpc']
+        if 'id' in response:
+            e.id_ = response['id']
+        else:
+            e.id_ = VERSION_1
+
+        raise e
 
     if 'result' in response:
         return response['result']

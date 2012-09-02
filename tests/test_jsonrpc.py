@@ -7,7 +7,6 @@ import re
 from fastjsonrpc import jsonrpc
 from fastjsonrpc.jsonrpc import JSONRPCError
 from twisted.trial.unittest import TestCase
-from twisted.python.failure import Failure
 
 class TestEncodeRequest(TestCase):
 
@@ -261,9 +260,18 @@ class TestDecodeResponse(TestCase):
         ret = 'abcd'
         self.assertEquals(ret, jsonrpc.decodeResponse(response))
 
-    def test_onlyError(self):
+    def test_onlyErrorRaises(self):
         response = '{"error": {"message": "some error", "code": 123}}'
-        self.assertRaises(Exception, jsonrpc.decodeResponse, response)
+        self.assertRaises(JSONRPCError, jsonrpc.decodeResponse, response)
+
+    def test_onlyErrorExceptionDetails(self):
+        response = '{"error": {"message": "some error", "code": 123}}'
+        try:
+            jsonrpc.decodeResponse(response)
+        except jsonrpc.JSONRPCError as e:
+            self.assertEquals(e.strerror, 'some error')
+            self.assertEquals(e.errno, 123)
+            self.assertEquals(e.version, jsonrpc.VERSION_1)
 
     def test_resultAndErrorNull(self):
         response = '{"result": "abcd", "error": null}'
@@ -273,7 +281,18 @@ class TestDecodeResponse(TestCase):
     def test_errorAndResultNull(self):
         response = '{"result": null, "error": {"message": "some error", '
         response += '"code": 123}}'
-        self.assertRaises(Exception, jsonrpc.decodeResponse, response)
+        self.assertRaises(JSONRPCError, jsonrpc.decodeResponse, response)
+
+    def test_errorAndResultNullExceptionDetails(self):
+        response = '{"result": null, "error": {"message": "some error", '
+        response += '"code": 123}}'
+        try:
+            jsonrpc.decodeResponse(response)
+        except jsonrpc.JSONRPCError as e:
+            self.assertEquals(e.strerror, 'some error')
+            self.assertEquals(e.errno, 123)
+            self.assertEquals(e.version, jsonrpc.VERSION_1)
+
 
     def test_errorAndResult(self):
         response = '{"error": {"message": "some error", "code": 123}, '
