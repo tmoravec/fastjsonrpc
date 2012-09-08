@@ -34,6 +34,12 @@ class TestEncodeRequest(TestCase):
         pattern += '"id": \d+\}'
         self.assertTrue(re.match(pattern, result))
 
+    def test_methodKwargs(self):
+        result = jsonrpc.encodeRequest('method', {'first': 'a', 'second': 'b'})
+        pattern = '\{"params": \{"second": "b", "first": "a"\}, '
+        pattern += '"method": "method", "id": \d+\}'
+        self.assertTrue(re.match(pattern, result))
+
     def test_methodVersion1(self):
         result = jsonrpc.encodeRequest('method', version=1.0)
         pattern = '\{"method": "method", "id": \d+\}'
@@ -159,6 +165,10 @@ class TestVerifyRequest(TestCase):
 
     def test_paramsSequence(self):
         request = {'method': 'aa', 'params': ['abcdef', 12321]}
+        self.assertEquals(None, jsonrpc.verifyRequest(request))
+
+    def test_paramsMapping(self):
+        request = {'method': 'aa', 'params': {'name': 'data', 'name2': 'data'}}
         self.assertEquals(None, jsonrpc.verifyRequest(request))
 
     def test_idInt(self):
