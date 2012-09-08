@@ -26,9 +26,3 @@ TODO
 
 * Batch requests
 
-* Tests
-
-* Better handling of errors in the client
-
-
-
