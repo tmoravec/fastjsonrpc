@@ -95,7 +95,10 @@ class JSONRPCServer(resource.Resource):
 
                 # Here we actually call the function
                 if 'params' in request_dict:
-                    d = maybeDeferred(function, *request_dict['params'])
+                    if isinstance(request_dict['params'], dict):
+                        d = maybeDeferred(function, **request_dict['params'])
+                    else:
+                        d = maybeDeferred(function, *request_dict['params'])
                 else:
                     d = maybeDeferred(function)
 

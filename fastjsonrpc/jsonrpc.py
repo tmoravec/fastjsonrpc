@@ -211,7 +211,8 @@ def verifyRequest(decoded):
 
         if ('params' in decoded and
                 not isinstance(decoded['params'],
-                               (types.ListType, types.TupleType))):
+                               (types.ListType, types.TupleType,
+                                types.DictType))):
             raise JSONRPCError('Invalid params type', INVALID_REQUEST)
 
     except JSONRPCError as e:

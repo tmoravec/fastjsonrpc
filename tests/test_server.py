@@ -301,3 +301,45 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
+    def test_keywordsOkV1(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+                                   '{"data": "arg"}}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"error": null, "id": 1, "result": "arg"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_keywordsOkV2(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+                                   '{"data": "arg"}, "jsonrpc": "2.0"}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"jsonrpc": "2.0", "id": 1, "result": "arg"}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_keywordsUnexpected(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+                                   '{"wrongname": "arg"}}')
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"result": null, "id": 1, "error": {"message": ' + \
+                       '"jsonrpc_echo() got an unexpected keyword argument ' + \
+                       '\'wrongname\'", "code": -32602}}'
+
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
