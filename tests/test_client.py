@@ -199,3 +199,46 @@ class TestProxy(TestCase):
         e.addCallback(finished)
         return e
 
+    def test_keywordsV1(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1)
+        d = proxy.callRemote('echo', data=data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_keywordsV2(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_2)
+        d = proxy.callRemote('echo', data=data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_keywordsUnexpected(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1)
+        d = proxy.callRemote('echo', wrongname=data)
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            msg = 'jsonrpc_echo() got an unexpected keyword argument ' + \
+                  '\'wrongname\''
+            self.assertEquals(result.strerror, msg)
+            self.assertEquals(result.errno, jsonrpc.INVALID_PARAMS)
+
+        e.addCallback(finished)
+        return d
+

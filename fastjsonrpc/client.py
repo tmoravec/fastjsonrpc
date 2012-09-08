@@ -134,7 +134,7 @@ class Proxy(object):
         response.deliverBody(ReceiverProtocol(finished))
         return finished
 
-    def callRemote(self, method, *args):
+    def callRemote(self, method, *args, **kwargs):
         """
         Remotely calls the method, with args. Given that we keep reference to
         the call via the Deferred, there's no need for id. It will coin some
@@ -151,7 +151,12 @@ class Proxy(object):
         @TODO support **kwargs
         """
 
-        json_request = jsonrpc.encodeRequest(method, args, version=self.version)
+        if kwargs:
+            json_request = jsonrpc.encodeRequest(method, kwargs,
+                                                 version=self.version)
+        else:
+            json_request = jsonrpc.encodeRequest(method, args,
+                                                 version=self.version)
 
         agent = Agent(reactor)
         body = StringProducer(json_request)
