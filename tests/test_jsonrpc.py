@@ -141,55 +141,55 @@ class TestDecodeRequest(TestCase):
         self.assertEquals(result, expected)
 
 
-class TestVerifyRequest(TestCase):
+class TestVerifyMethodCall(TestCase):
 
     def test_onlyMethod(self):
         request = {'method': 'abc'}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_onlyId(self):
         request = {'id': 123}
-        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+        self.assertRaises(JSONRPCError, jsonrpc.verifyMethodCall, request)
 
     def test_onlyVersion(self):
         request = {'jsonrpc': 2}
-        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+        self.assertRaises(JSONRPCError, jsonrpc.verifyMethodCall, request)
 
     def test_onlyParams(self):
         request = {'params': [123, 'afaf']}
-        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+        self.assertRaises(JSONRPCError, jsonrpc.verifyMethodCall, request)
 
     def test_paramsNotSequence(self):
         request = {'method': 'aa', 'params': 123}
-        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+        self.assertRaises(JSONRPCError, jsonrpc.verifyMethodCall, request)
 
     def test_paramsSequence(self):
         request = {'method': 'aa', 'params': ['abcdef', 12321]}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_paramsMapping(self):
         request = {'method': 'aa', 'params': {'name': 'data', 'name2': 'data'}}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_idInt(self):
         request = {'method': 'aa', 'id': 1}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_idStr(self):
         request = {'method': 'aa', 'id': '1b3'}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_versionInt(self):
         request = {'method': 'aa', 'jsonrpc': 2}
-        self.assertRaises(JSONRPCError, jsonrpc.verifyRequest, request)
+        self.assertRaises(JSONRPCError, jsonrpc.verifyMethodCall, request)
 
     def test_versionFloat(self):
         request = {'method': 'aa', 'jsonrpc': 2.0}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
     def test_versionStr(self):
         request = {'method': 'aa', 'jsonrpc': '2'}
-        self.assertEquals(None, jsonrpc.verifyRequest(request))
+        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
 
 class TestEncodeResponse(TestCase):
