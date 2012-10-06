@@ -39,7 +39,7 @@ class JSONRPCServer(resource.Resource):
 
     isLeaf = 1
 
-    def _noSuchMethod(self, request_dict):
+    def _methodNotFound(self, request_dict):
         """
         Raise JSONRPCError with all info we can get from the request
 
@@ -61,8 +61,56 @@ class JSONRPCServer(resource.Resource):
         else:
             version = None
 
-        raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
-                                   version=version)
+        return jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
+                                    version=version)
+
+    def _getRequestContent(self, request):
+        """
+        Parse the JSON from the request. Return it as a dict.
+
+        @type request: t.w.s.Request
+        @param request: The request from client
+
+        @rtype: dict
+        @return: dict, containing id, method, params and (if present) jsonrpc
+
+        @raise JSONRPCError: If there's error in parsing.
+        """
+
+        request.content.seek(0, 0)
+        request_content = request.content.read()
+        request_dict = jsonrpc.decodeRequest(request_content)
+
+        return request_dict
+
+    def _callMethod(self, request_dict):
+        """
+        Here we actually call the method. Although we don't return anything,
+        reactor will take care of the deferred.
+
+        @type request_dict: dict
+        @param request_dict: Dict with details about the request
+
+        @type request: t.w.s.Request
+        @param request: The request from client
+        """
+
+        function = getattr(self, 'jsonrpc_%s' % request_dict['method'], None)
+        if callable(function):
+
+            if 'params' in request_dict:
+                if isinstance(request_dict['params'], dict):
+                    d = maybeDeferred(function, **request_dict['params'])
+                else:
+                    d = maybeDeferred(function, *request_dict['params'])
+            else:
+                d = maybeDeferred(function)
+
+            return d
+
+        else:
+            e = self._methodNotFound(request_dict)
+            raise e
 
     def render(self, request):
         """
@@ -79,34 +127,14 @@ class JSONRPCServer(resource.Resource):
         @rtype: some constant :-)
         @return: NOT_DONE_YET signalizing, that there's Deferred, that will take
         care about sending the response.
-
-        @TODO Support for **kwargs
         """
 
         try:
-            request.content.seek(0, 0)
-            request_content = request.content.read()
-            request_dict = jsonrpc.decodeRequest(request_content)
-            jsonrpc.verifyRequest(request_dict)
-
-            function = getattr(self, 'jsonrpc_%s' % request_dict['method'],
-                               None)
-            if callable(function):
-
-                # Here we actually call the function
-                if 'params' in request_dict:
-                    if isinstance(request_dict['params'], dict):
-                        d = maybeDeferred(function, **request_dict['params'])
-                    else:
-                        d = maybeDeferred(function, *request_dict['params'])
-                else:
-                    d = maybeDeferred(function)
-
-                d.addBoth(self._cbResult, request, request_dict['id'],
-                          request_dict['jsonrpc'])
-
-            else:
-                self._noSuchMethod(request_dict)
+            request_dict = self._getRequestContent(request)
+            jsonrpc.verifyMethodCall(request_dict)
+            d = self._callMethod(request_dict)
+            d.addBoth(self._cbResult, request, request_dict['id'],
+                      request_dict['jsonrpc'])
 
         except jsonrpc.JSONRPCError as e:
             f = Failure(e)
@@ -140,8 +168,21 @@ class JSONRPCServer(resource.Resource):
             result = result.value
 
         encoded = jsonrpc.encodeResponse(result, id_, version)
+        self._sendResponse(encoded, request)
+
+    def _sendResponse(self, response, request):
+        """
+        Send the response back to client. Expects it to be already serialized
+        into JSON.
+
+        @type response: str
+        @param response: JSON with the response
+
+        @type request: t.w.s.Request
+        @param request The request that came from a client
+        """
 
         request.setHeader('Content-Type', 'application/json')
-        request.setHeader('Content-Length', len(encoded))
-        request.write(encoded)
+        request.setHeader('Content-Length', len(response))
+        request.write(response)
         request.finish()

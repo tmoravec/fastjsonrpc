@@ -179,7 +179,7 @@ def decodeRequest(request):
 
     return decoded
 
-def verifyRequest(decoded):
+def verifyMethodCall(decoded):
     """
     Verifies the request. Expects it to be already parsed. Doesn't return
     anything, but rather raises an exception.
