@@ -261,9 +261,9 @@ def _getErrorResponse(exception):
 
     return error_result
 
-def encodeResponse(result, id_, version=VERSION_1):
+def prepareResponse(result, id_, version=VERSION_1):
     """
-    Encodes the server response into JSON.
+    Add all info we have to the response.
 
     @type result: mixed
     @param result: What the called function returned. Might be a Failure!
@@ -298,7 +298,7 @@ def encodeResponse(result, id_, version=VERSION_1):
         if version == VERSION_1:
             response['error'] = None
 
-    return jdumps(response)
+    return response
 
 
 class JSONRPCError(Exception):

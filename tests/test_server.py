@@ -26,6 +26,7 @@ def _render(resource, request):
 
 
 class TestRender(TestCase):
+    timeout = 1
 
     def setUp(self):
         self.srv = DummyServer()
@@ -343,3 +344,46 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
+    def test_batch(self):
+        json = '[{"method": "echo", "id": 1, "params": {"data": "arg"}}, ' + \
+                '{"method": "echo", "id": 2, "params": {"data": "arg"}}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '[{"error": null, "id": 1, "result": "arg"}, ' + \
+                       '{"error": null, "id": 2, "result": "arg"}]'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_batchNotificationOnly(self):
+        json = '[{"method": "echo", "params": {"data": "arg"}}, ' + \
+                '{"method": "echo", "params": {"data": "arg"}}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            self.assertEquals(request.written, [])
+
+        d.addCallback(rendered)
+        return d
+
+    def test_batchNotificationMixed(self):
+        json = '[{"method": "echo", "id": 1, "params": {"data": "arg"}}, ' + \
+               '{"method": "echo", "id": 2, "params": {"data": "arg"}}, ' + \
+                '{"method": "echo", "params": {"data": "arg"}}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '[{"error": null, "id": 1, "result": "arg"}, ' + \
+                       '{"error": null, "id": 2, "result": "arg"}]'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
