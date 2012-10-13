@@ -24,5 +24,5 @@ Features
 TODO
 ============
 
-* Batch requests
+* More tests, better (functionality) coverage
 
