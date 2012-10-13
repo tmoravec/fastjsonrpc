@@ -21,3 +21,5 @@ class DummyServer(JSONRPCServer):
         d.addCallback(firstRow)
         return d
 
+    def jsonrpc_returnNone(self):
+        return None

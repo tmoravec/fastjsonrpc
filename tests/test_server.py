@@ -110,6 +110,19 @@ class TestRender(TestCase):
         d.addCallback(rendered)
         return d
 
+    def test_returnNone(self):
+        request = DummyRequest([''])
+        request.content = StringIO('{"method": "returnNone", "id": 1}')
+
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '{"error": null, "id": 1, "result": null}'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
     def test_caseSensitiveMethodV1(self):
         request = DummyRequest([''])
         request.content = StringIO('{"method": "ECHO", "id": "ABCD", ' +
