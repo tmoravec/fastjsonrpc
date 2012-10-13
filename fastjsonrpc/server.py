@@ -57,10 +57,10 @@ class JSONRPCServer(resource.Resource):
         """
 
         request.content.seek(0, 0)
-        request_content = request.content.read()
-        request_json = jsonrpc.decodeRequest(request_content)
+        request_json = request.content.read()
+        request_content = jsonrpc.decodeRequest(request_json)
 
-        return request_json
+        return request_content
 
     def _parseError(self, request):
         """
