@@ -103,7 +103,10 @@ class JSONRPCServer(resource.Resource):
             return d
 
         else:
-            self._methodNotFound(request_dict)
+            msg = 'Method %s not found' % request_dict['method']
+            raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND,
+                                       id_=request_dict['id'],
+                                       version=request_dict['jsonrpc'])
 
     def render(self, request):
         """
@@ -130,17 +133,12 @@ class JSONRPCServer(resource.Resource):
 
         dl = []
         for request_dict in request_content:
-            try:
-                jsonrpc.verifyMethodCall(request_dict)
-                d = self._callMethod(request_dict)
-                d.addBoth(jsonrpc.prepareMethodResponse, request_dict['id'],
-                          request_dict['jsonrpc'])
-            except jsonrpc.JSONRPCError as e:
-                method_response = jsonrpc.prepareMethodResponse(
-                        e, request_dict['id'], request_dict['jsonrpc'])
-                d = succeed(method_response)
-            finally:
-                dl.append(d)
+            d = succeed(request_dict)
+            d.addCallback(jsonrpc.verifyMethodCall)
+            d.addCallback(self._callMethod)
+            d.addBoth(jsonrpc.prepareMethodResponse, request_dict['id'],
+                      request_dict['jsonrpc'])
+            dl.append(d)
 
         dl = DeferredList(dl, consumeErrors=True)
         dl.addBoth(self._cbFinishRequest, request)

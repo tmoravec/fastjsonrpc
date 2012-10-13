@@ -145,7 +145,7 @@ class TestVerifyMethodCall(TestCase):
 
     def test_onlyMethod(self):
         request = {'method': 'abc'}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_onlyId(self):
         request = {'id': 123}
@@ -165,19 +165,19 @@ class TestVerifyMethodCall(TestCase):
 
     def test_paramsSequence(self):
         request = {'method': 'aa', 'params': ['abcdef', 12321]}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_paramsMapping(self):
         request = {'method': 'aa', 'params': {'name': 'data', 'name2': 'data'}}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_idInt(self):
         request = {'method': 'aa', 'id': 1}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_idStr(self):
         request = {'method': 'aa', 'id': '1b3'}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_versionInt(self):
         request = {'method': 'aa', 'jsonrpc': 2}
@@ -185,11 +185,11 @@ class TestVerifyMethodCall(TestCase):
 
     def test_versionFloat(self):
         request = {'method': 'aa', 'jsonrpc': 2.0}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
     def test_versionStr(self):
         request = {'method': 'aa', 'jsonrpc': '2'}
-        self.assertEquals(None, jsonrpc.verifyMethodCall(request))
+        self.assertEquals(request, jsonrpc.verifyMethodCall(request))
 
 
 class TestPrepareMethodResponse(TestCase):

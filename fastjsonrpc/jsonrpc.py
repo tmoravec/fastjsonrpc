@@ -216,6 +216,8 @@ def verifyMethodCall(decoded):
                                 types.DictType))):
             raise JSONRPCError('Invalid params type', INVALID_REQUEST)
 
+        return decoded
+
     except JSONRPCError as e:
         # Add all known info to the exception, so we can return it correctly
 
