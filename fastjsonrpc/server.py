@@ -26,7 +26,6 @@ from twisted.web import server
 from twisted.internet.defer import maybeDeferred
 from twisted.internet.defer import DeferredList
 from twisted.internet.defer import succeed
-from twisted.python.failure import Failure
 
 import jsonrpc
 
@@ -42,32 +41,6 @@ class JSONRPCServer(resource.Resource):
     """
 
     isLeaf = 1
-
-    def _methodNotFound(self, request_dict):
-        """
-        Raise JSONRPCError with all info we can get from the request
-
-        @type request_dict: dict
-        @param request_dict: Parsed request from client
-
-        @exception jsonrpc.JSONRPCError
-        @TODO refactor with _methodResponse
-        """
-
-        msg = 'Method %s not found' % request_dict['method']
-
-        if 'id' in request_dict:
-            id_ = request_dict['id']
-        else:
-            id_ = None
-
-        if 'jsonrpc' in request_dict:
-            version = request_dict['jsonrpc']
-        else:
-            version = None
-
-        raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
-                                   version=version)
 
     def _getRequestContent(self, request):
         """
@@ -98,6 +71,7 @@ class JSONRPCServer(resource.Resource):
         @type request: t.w.s.Request
         @param request: Request from client
         """
+
         response = jsonrpc.parseError()
         self._sendResponse(response, request)
 
@@ -131,37 +105,6 @@ class JSONRPCServer(resource.Resource):
         else:
             self._methodNotFound(request_dict)
 
-    def _cbMethodResponse(self, result, request_dict):
-        """
-        Add all available info to the result - i.e. prepare the response for a
-        single method
-
-        @type result: mixed
-        @param result: What the called function returned
-
-        @type request_dict: dict
-        @param request_dict: Dict with info about the called method
-
-        @rtype: dict
-        @return: Method result with all info we should add, ready to be
-            serialized.
-        """
-
-        if request_dict['id'] is None:
-            # Notification.. Don't return anything
-            return None
-
-        if isinstance(result, Failure):
-            result = result.value
-
-        if 'jsonrpc' in request_dict:
-            version = request_dict['jsonrpc']
-        else:
-            version = jsonrpc.VERSION_1
-
-        return jsonrpc.prepareMethodResponse(result, request_dict['id'],
-                                             version)
-
     def render(self, request):
         """
         This is the 'main' RPC method. This will always be called when a request
@@ -190,9 +133,12 @@ class JSONRPCServer(resource.Resource):
             try:
                 jsonrpc.verifyMethodCall(request_dict)
                 d = self._callMethod(request_dict)
-                d.addBoth(self._cbMethodResponse, request_dict)
+                d.addBoth(jsonrpc.prepareMethodResponse, request_dict['id'],
+                          request_dict['jsonrpc'])
             except jsonrpc.JSONRPCError as e:
-                d = succeed(self._cbMethodResponse(e, request_dict))
+                method_response = jsonrpc.prepareMethodResponse(
+                        e, request_dict['id'], request_dict['jsonrpc'])
+                d = succeed(method_response)
             finally:
                 dl.append(d)
 

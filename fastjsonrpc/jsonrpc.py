@@ -37,6 +37,7 @@ except ImportError:
 
 import random
 import types
+from twisted.python.failure import Failure
 
 VERSION_1 = 1.0
 VERSION_2 = 2.0
@@ -261,7 +262,7 @@ def _getErrorResponse(exception):
 
     return error_result
 
-def prepareMethodResponse(result, id_, version=VERSION_1):
+def prepareMethodResponse(result, id_=None, version=VERSION_1):
     """
     Add all info we have to the response.
 
@@ -277,6 +278,13 @@ def prepareMethodResponse(result, id_, version=VERSION_1):
     @rtype: str
     @return: JSON-encoded response
     """
+
+    if id_ is None:
+        # notification
+        return None
+
+    if isinstance(result, Failure):
+        result = result.value
 
     if isinstance(result, Exception):
         error_result = _getErrorResponse(result)

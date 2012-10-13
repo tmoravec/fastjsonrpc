@@ -216,7 +216,7 @@ class TestPrepareMethodResponse(TestCase):
 
     def test_noId(self):
         result = jsonrpc.prepareMethodResponse(None, None)
-        expected = {"error": None, "id": None, "result": None}
+        expected = None
         self.assertEquals(result, expected)
 
     def test_idStr(self):
