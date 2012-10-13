@@ -37,7 +37,9 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            self.assertEquals(request.written, [])
+            expected = '{"jsonrpc": "2.0", "id": null, "error": ' + \
+                       '{"message": "Parse error", "code": -32700}}'
+            self.assertEquals(request.written[0], expected)
 
         d.addCallback(rendered)
         return d
@@ -48,7 +50,9 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            self.assertEquals(request.written, [])
+            expected = '{"jsonrpc": "2.0", "id": null, "error": ' + \
+                       '{"message": "Parse error", "code": -32700}}'
+            self.assertEquals(request.written[0], expected)
 
         d.addCallback(rendered)
         return d

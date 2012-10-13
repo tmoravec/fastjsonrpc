@@ -71,22 +71,35 @@ class JSONRPCServer(resource.Resource):
 
     def _getRequestContent(self, request):
         """
-        Parse the JSON from the request. Return it as a dict.
+        Parse the JSON from the request.
 
         @type request: t.w.s.Request
         @param request: The request from client
 
-        @rtype: dict
-        @return: dict, containing id, method, params and (if present) jsonrpc
+        @rtype: list
+        @return: List of dicts, one dict per method call.
 
         @raise JSONRPCError: If there's error in parsing.
         """
 
         request.content.seek(0, 0)
         request_content = request.content.read()
-        request_dict = jsonrpc.decodeRequest(request_content)
+        request_json = jsonrpc.decodeRequest(request_content)
 
-        return request_dict
+        if not isinstance(request_json, list):
+            request_json = [request_json]
+
+        return request_json
+
+    def _parseError(self, request):
+        """
+        Coin a 'parse error' response and finish the request
+
+        @type request: t.w.s.Request
+        @param request: Request from client
+        """
+        response = jsonrpc.parseError()
+        self._sendResponse(response, request)
 
     def _callMethod(self, request_dict):
         """
@@ -98,6 +111,8 @@ class JSONRPCServer(resource.Resource):
 
         @type request: t.w.s.Request
         @param request: The request from client
+
+        @raise JSONRPCError: When method not found.
         """
 
         function = getattr(self, 'jsonrpc_%s' % request_dict['method'], None)
@@ -117,7 +132,7 @@ class JSONRPCServer(resource.Resource):
             e = self._methodNotFound(request_dict)
             raise e
 
-    def _methodResponse(self, result, request_dict):
+    def _cbMethodResponse(self, result, request_dict):
         """
         Add all available info to the result - i.e. prepare the response for a
         single method
@@ -167,31 +182,26 @@ class JSONRPCServer(resource.Resource):
         try:
             request_content = self._getRequestContent(request)
         except jsonrpc.JSONRPCError as e:
-            # failed to parse the request
-            # TODO respond with PARSE_ERROR
-            request.finish()
+            self._parseError(request)
             return server.NOT_DONE_YET
-
-        if not isinstance(request_content, list):
-            request_content = [request_content]
 
         dl = []
         for request_dict in request_content:
             try:
                 jsonrpc.verifyMethodCall(request_dict)
                 d = self._callMethod(request_dict)
-                d.addBoth(self._methodResponse, request_dict)
+                d.addBoth(self._cbMethodResponse, request_dict)
             except jsonrpc.JSONRPCError as e:
-                d = succeed(self._methodResponse(e, request_dict))
+                d = succeed(self._cbMethodResponse(e, request_dict))
             finally:
                 dl.append(d)
 
         dl = DeferredList(dl, consumeErrors=True)
-        dl.addBoth(self._finishRequest, request)
+        dl.addBoth(self._cbFinishRequest, request)
 
         return server.NOT_DONE_YET
 
-    def _finishRequest(self, results, request):
+    def _cbFinishRequest(self, results, request):
         """
         Manages sending the response to the client and finishing the request.
         This gets called after all methods have returned.
@@ -218,10 +228,7 @@ class JSONRPCServer(resource.Resource):
         if len(ret) == 1:
             ret = ret[0]
 
-        if ret != []:
-            self._sendResponse(jsonrpc.jdumps(ret), request)
-
-        request.finish()
+        self._sendResponse(jsonrpc.jdumps(ret), request)
 
     def _sendResponse(self, response, request):
         """
@@ -235,7 +242,10 @@ class JSONRPCServer(resource.Resource):
         @param request The request that came from a client
         """
 
-        request.setHeader('Content-Type', 'application/json')
-        request.setHeader('Content-Length', len(response))
-        request.write(response)
+        if response != '[]':
+            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Length', len(response))
+            request.write(response)
+
+        request.finish()
 

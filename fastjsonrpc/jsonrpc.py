@@ -301,6 +301,20 @@ def prepareResponse(result, id_, version=VERSION_1):
     return response
 
 
+def parseError():
+    """
+    Coin 'parse error' response. Since we don't know id, default to NULL. And
+    since we don't know jsonrpc version, default to '2.0', given that V1 spec
+    doesn't cover parse errors.
+
+    @rtype: str
+    @return: Serialized message informing that there was a parse error.
+    """
+    response = {'jsonrpc': '2.0', 'id': None, 'error':
+                {'code': PARSE_ERROR, 'message': 'Parse error'}}
+    return jdumps(response)
+
+
 class JSONRPCError(Exception):
     """
     JSON-RPC specific error
