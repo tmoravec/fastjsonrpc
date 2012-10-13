@@ -60,9 +60,6 @@ class JSONRPCServer(resource.Resource):
         request_content = request.content.read()
         request_json = jsonrpc.decodeRequest(request_content)
 
-        if not isinstance(request_json, list):
-            request_json = [request_json]
-
         return request_json
 
     def _parseError(self, request):
@@ -128,6 +125,11 @@ class JSONRPCServer(resource.Resource):
             self._parseError(request)
             return server.NOT_DONE_YET
 
+        is_batch = True
+        if not isinstance(request_content, list):
+            request_content = [request_content]
+            is_batch = False
+
         dl = []
         for request_dict in request_content:
             d = succeed(request_dict)
@@ -138,11 +140,11 @@ class JSONRPCServer(resource.Resource):
             dl.append(d)
 
         dl = DeferredList(dl, consumeErrors=True)
-        dl.addBoth(self._cbFinishRequest, request)
+        dl.addBoth(self._cbFinishRequest, request, is_batch)
 
         return server.NOT_DONE_YET
 
-    def _cbFinishRequest(self, results, request):
+    def _cbFinishRequest(self, results, request, is_batch):
         """
         Manages sending the response to the client and finishing the request.
         This gets called after all methods have returned.
@@ -160,7 +162,7 @@ class JSONRPCServer(resource.Resource):
             if result is not None:
                 method_responses.append(result)
 
-        if len(method_responses) == 1:
+        if not is_batch and len(method_responses) == 1:
             method_responses = method_responses[0]
 
         response = jsonrpc.prepareCallResponse(method_responses)

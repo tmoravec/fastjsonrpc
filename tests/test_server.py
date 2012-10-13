@@ -404,3 +404,29 @@ class TestRender(TestCase):
 
         d.addCallback(rendered)
         return d
+    def test_batchSingle(self):
+        json = '[{"method": "echo", "id": 1, "params": ["arg"]}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '[{"error": null, "id": 1, "result": "arg"}]'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
+    def test_batchNotificationAndSingle(self):
+        json = '[{"method": "echo", "id": 1, "params": ["arg"]}, ' + \
+                '{"method": "echo", "params": ["arg"]}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '[{"error": null, "id": 1, "result": "arg"}]'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
