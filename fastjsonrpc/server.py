@@ -36,15 +36,16 @@ class JSONRPCServer(resource.Resource):
 
     It will expose all methods that start with 'jsonrpc_' (without the
     'jsonrpc_' part).
-
-    @TODO Think twice what belongs to jsonrpc and what belongs here.
     """
 
     isLeaf = 1
 
     def _getRequestContent(self, request):
         """
-        Parse the JSON from the request.
+        Parse the JSON from the request. Return it as a list, even if there was
+        only one method call (which would give us a dict). This will be useful
+        later, as we can iterate over it in the same manner if it is a single
+        call or a batch request.
 
         @type request: t.w.s.Request
         @param request: The request from client
@@ -66,7 +67,7 @@ class JSONRPCServer(resource.Resource):
 
     def _parseError(self, request):
         """
-        Coin a 'parse error' response and finish the request
+        Coin a 'parse error' response and finish the request.
 
         @type request: t.w.s.Request
         @param request: Request from client
@@ -77,14 +78,13 @@ class JSONRPCServer(resource.Resource):
 
     def _callMethod(self, request_dict):
         """
-        Here we actually call the method. Although we don't return anything,
-        reactor will take care of the deferred.
+        Here we actually find and call the method.
 
         @type request_dict: dict
-        @param request_dict: Dict with details about the request
+        @param request_dict: Dict with details about the method
 
-        @type request: t.w.s.Request
-        @param request: The request from client
+        @rtype: Deferred
+        @return: Deferred, that will eventually fire with the method's result.
 
         @raise JSONRPCError: When method not found.
         """
@@ -111,11 +111,8 @@ class JSONRPCServer(resource.Resource):
     def render(self, request):
         """
         This is the 'main' RPC method. This will always be called when a request
-        arrives and it's up to this method to dispatch it further.
-
-        This method will call the appropriate exposed method (i.e. one
-        starting with 'jsonrpc_) and it will pass the (async) result to
-        self._cbResult.
+        arrives and it's up to this method to parse the request and
+        dispatch it further.
 
         @type request: t.w.s.Request
         @param request: Request from client
@@ -127,7 +124,7 @@ class JSONRPCServer(resource.Resource):
 
         try:
             request_content = self._getRequestContent(request)
-        except jsonrpc.JSONRPCError as e:
+        except jsonrpc.JSONRPCError:
             self._parseError(request)
             return server.NOT_DONE_YET
 
@@ -156,12 +153,6 @@ class JSONRPCServer(resource.Resource):
 
         @type request: t.w.s.Request
         @param request: The request that came from a client
-
-        @type id_: int
-        @param id_: id of the request
-
-        @type version: float
-        @param version: JSON-RPC version
         """
 
         method_responses = []
@@ -188,6 +179,7 @@ class JSONRPCServer(resource.Resource):
         """
 
         if response != '[]':
+            # '[]' is result of batch request with notifications only
             request.setHeader('Content-Type', 'application/json')
             request.setHeader('Content-Length', len(response))
             request.write(response)

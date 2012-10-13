@@ -167,8 +167,9 @@ def decodeRequest(request):
     @type request: str
     @param request: The JSON encoded request
 
-    @rtype: dict
-    @return: dict, containing id, method, params and (if present) jsonrpc
+    @rtype: mixed
+    @return: Whatever the client sent, most probably a list (in the case of
+    a batch request) or dict (in the case of a single method call).
 
     @raise JSONRPCError: If there's error in parsing.
     """
@@ -182,11 +183,14 @@ def decodeRequest(request):
 
 def verifyMethodCall(request):
     """
-    Verifies the request. Expects it to be already parsed. Doesn't return
-    anything, but rather raises an exception.
+    Verifies a single method call. We call this for every method in case of a
+    batch request. If there are any params missing and we don't need it, add it.
 
     @type request: dict
     @param request: Decoded request from user
+
+    @rtype: dict
+    @return: What we got, possibly with some keys more.
 
     @raise JSONRPCError: If there's anything wrong with the request, raise
     JSONRPCError with description of what's wrong. Attempts to add to it as much
@@ -266,7 +270,7 @@ def _getErrorResponse(exception):
 
 def prepareMethodResponse(result, id_=None, version=VERSION_1):
     """
-    Add all info we have to the response.
+    Add all info we have to the response, prepare it to be serialized.
 
     @type result: mixed
     @param result: What the called function returned. Might be a Failure!
