@@ -66,8 +66,8 @@ class JSONRPCServer(resource.Resource):
         else:
             version = None
 
-        return jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
-                                    version=version)
+        raise jsonrpc.JSONRPCError(msg, jsonrpc.METHOD_NOT_FOUND, id_=id_,
+                                   version=version)
 
     def _getRequestContent(self, request):
         """
@@ -129,8 +129,7 @@ class JSONRPCServer(resource.Resource):
             return d
 
         else:
-            e = self._methodNotFound(request_dict)
-            raise e
+            self._methodNotFound(request_dict)
 
     def _cbMethodResponse(self, result, request_dict):
         """
