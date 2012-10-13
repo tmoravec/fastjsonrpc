@@ -404,6 +404,23 @@ class TestRender(TestCase):
 
         d.addCallback(rendered)
         return d
+
+    def test_batchV1V2(self):
+        json = '[{"method": "echo", "id": 1, "params": ["arg"]}, ' + \
+                '{"method": "echo", "id": "abc", "params": ["arg"], ' + \
+                 '"jsonrpc": "2.0"}]'
+        request = DummyRequest([''])
+        request.content = StringIO(json)
+        d = _render(self.srv, request)
+
+        def rendered(_):
+            expected = '[{"error": null, "id": 1, "result": "arg"}, ' + \
+                        '{"jsonrpc": "2.0", "id": "abc", "result": "arg"}]'
+            self.assertEquals(request.written[0], expected)
+
+        d.addCallback(rendered)
+        return d
+
     def test_batchSingle(self):
         json = '[{"method": "echo", "id": 1, "params": ["arg"]}]'
         request = DummyRequest([''])
