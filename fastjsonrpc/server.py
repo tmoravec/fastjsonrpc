@@ -159,7 +159,8 @@ class JSONRPCServer(resource.Resource):
         else:
             version = jsonrpc.VERSION_1
 
-        return jsonrpc.prepareResponse(result, request_dict['id'], version)
+        return jsonrpc.prepareMethodResponse(result, request_dict['id'],
+                                             version)
 
     def render(self, request):
         """
@@ -206,8 +207,8 @@ class JSONRPCServer(resource.Resource):
         This gets called after all methods have returned.
 
         @type results: list
-        @param results: List of tuples (success, result) as DeferredList
-            returns.
+        @param results: List of tuples (success, result) what DeferredList
+            returned.
 
         @type request: t.w.s.Request
         @param request: The request that came from a client
@@ -219,15 +220,16 @@ class JSONRPCServer(resource.Resource):
         @param version: JSON-RPC version
         """
 
-        ret = []
+        method_responses = []
         for (success, result) in results:
             if result is not None:
-                ret.append(result)
+                method_responses.append(result)
 
-        if len(ret) == 1:
-            ret = ret[0]
+        if len(method_responses) == 1:
+            method_responses = method_responses[0]
 
-        self._sendResponse(jsonrpc.jdumps(ret), request)
+        response = jsonrpc.prepareCallResponse(method_responses)
+        self._sendResponse(response, request)
 
     def _sendResponse(self, response, request):
         """

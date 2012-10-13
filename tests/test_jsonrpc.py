@@ -192,41 +192,41 @@ class TestVerifyMethodCall(TestCase):
         self.assertEquals(None, jsonrpc.verifyMethodCall(request))
 
 
-class TestPrepareResponse(TestCase):
+class TestPrepareMethodResponse(TestCase):
 
     def test_noResponseNoVersion(self):
-        result = jsonrpc.prepareResponse(None, 123)
+        result = jsonrpc.prepareMethodResponse(None, 123)
         expected = {"error": None, "id": 123, "result": None}
         self.assertEquals(result, expected)
 
     def test_noResponseV2(self):
-        result = jsonrpc.prepareResponse(None, 123, 2)
+        result = jsonrpc.prepareMethodResponse(None, 123, 2)
         expected = {"jsonrpc": "2.0", "id": 123, "result": None}
         self.assertEquals(result, expected)
 
     def test_responseStr(self):
-        result = jsonrpc.prepareResponse("result", 123)
+        result = jsonrpc.prepareMethodResponse("result", 123)
         expected = {"error": None, "id": 123, "result": "result"}
         self.assertEquals(result, expected)
 
     def test_responseInt(self):
-        result = jsonrpc.prepareResponse(12321, 123)
+        result = jsonrpc.prepareMethodResponse(12321, 123)
         expected = {"error": None, "id": 123, "result": 12321}
         self.assertEquals(result, expected)
 
     def test_noId(self):
-        result = jsonrpc.prepareResponse(None, None)
+        result = jsonrpc.prepareMethodResponse(None, None)
         expected = {"error": None, "id": None, "result": None}
         self.assertEquals(result, expected)
 
     def test_idStr(self):
-        result = jsonrpc.prepareResponse(None, '1b3')
+        result = jsonrpc.prepareMethodResponse(None, '1b3')
         expected = {"error": None, "id": "1b3", "result": None}
         self.assertEquals(result, expected)
 
     def test_responseException(self):
         response = ValueError('The method raised an exception!')
-        result = jsonrpc.prepareResponse(response, 123)
+        result = jsonrpc.prepareMethodResponse(response, 123)
         expected = {"result": None, "id": 123,
                     "error": {"message": "The method raised an exception!",
                     "code": -32603}}
@@ -234,7 +234,7 @@ class TestPrepareResponse(TestCase):
 
     def test_invalidParams(self):
         response = TypeError('Invalid params')
-        result = jsonrpc.prepareResponse(response, 123)
+        result = jsonrpc.prepareMethodResponse(response, 123)
         expected = {"result": None, "id": 123,
                     "error": {"message": "Invalid params",
                     "code": -32602}}
@@ -242,7 +242,7 @@ class TestPrepareResponse(TestCase):
 
     def test_methodNotFount(self):
         response = JSONRPCError('Method aa not found', jsonrpc.METHOD_NOT_FOUND)
-        result = jsonrpc.prepareResponse(response, 123)
+        result = jsonrpc.prepareMethodResponse(response, 123)
         expected = {"result": None, "id": 123,
                     "error": {"message": "Method aa not found",
                     "code": -32601}}

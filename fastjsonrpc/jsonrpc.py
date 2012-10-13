@@ -261,7 +261,7 @@ def _getErrorResponse(exception):
 
     return error_result
 
-def prepareResponse(result, id_, version=VERSION_1):
+def prepareMethodResponse(result, id_, version=VERSION_1):
     """
     Add all info we have to the response.
 
@@ -299,6 +299,20 @@ def prepareResponse(result, id_, version=VERSION_1):
             response['error'] = None
 
     return response
+
+
+def prepareCallResponse(result):
+    """
+    Prepare the response to the 'whole' call, be it a single method or a batch
+    request.
+
+    @type result: mixed
+    @param result: What we want to return to the client
+
+    @rtype: str
+    @return: Serialized result
+    """
+    return jdumps(result)
 
 
 def parseError():
