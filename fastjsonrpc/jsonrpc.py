@@ -180,13 +180,13 @@ def decodeRequest(request):
 
     return decoded
 
-def verifyMethodCall(decoded):
+def verifyMethodCall(request):
     """
     Verifies the request. Expects it to be already parsed. Doesn't return
     anything, but rather raises an exception.
 
-    @type decoded: dict
-    @param decoded: Decoded request from user
+    @type request: dict
+    @param request: Decoded request from user
 
     @raise JSONRPCError: If there's anything wrong with the request, raise
     JSONRPCError with description of what's wrong. Attempts to add to it as much
@@ -194,40 +194,40 @@ def verifyMethodCall(decoded):
     """
     try:
         # 'jsonrpc' is only contained in V2 requests
-        if 'jsonrpc' in decoded:
-            if not isinstance(decoded['jsonrpc'],
+        if 'jsonrpc' in request:
+            if not isinstance(request['jsonrpc'],
                               (types.StringTypes, types.FloatType)):
                 raise JSONRPCError('Invalid jsonrpc type', INVALID_REQUEST)
 
-            decoded['jsonrpc'] = float(decoded['jsonrpc'])
+            request['jsonrpc'] = float(request['jsonrpc'])
         else:
-            decoded['jsonrpc'] = VERSION_1
+            request['jsonrpc'] = VERSION_1
 
-        if 'id' not in decoded:
-            decoded['id'] = None
+        if 'id' not in request:
+            request['id'] = None
 
-        if (not 'method' in decoded or
-                not isinstance(decoded['method'], types.StringTypes)):
+        if (not 'method' in request or
+                not isinstance(request['method'], types.StringTypes)):
             raise JSONRPCError('Invalid method type', INVALID_REQUEST)
 
-        if ('params' in decoded and
-                not isinstance(decoded['params'],
+        if ('params' in request and
+                not isinstance(request['params'],
                                (types.ListType, types.TupleType,
                                 types.DictType))):
             raise JSONRPCError('Invalid params type', INVALID_REQUEST)
 
-        return decoded
+        return request
 
     except JSONRPCError as e:
         # Add all known info to the exception, so we can return it correctly
 
-        if 'id' in decoded and 'jsonrpc' in decoded:
-            raise JSONRPCError(e.strerror, e.errno, id_=decoded['id'],
-                               version=decoded['jsonrpc'])
-        elif 'id' in decoded:
-            raise JSONRPCError(e.strerror, e.errno, id_=decoded['id'])
-        elif 'jsonrpc' in decoded:
-            raise JSONRPCError(e.strerror, e.errno, version=decoded['jsonrpc'])
+        if 'id' in request and 'jsonrpc' in request:
+            raise JSONRPCError(e.strerror, e.errno, id_=request['id'],
+                               version=request['jsonrpc'])
+        elif 'id' in request:
+            raise JSONRPCError(e.strerror, e.errno, id_=request['id'])
+        elif 'jsonrpc' in request:
+            raise JSONRPCError(e.strerror, e.errno, version=request['jsonrpc'])
         else:
             raise JSONRPCError(e.strerror, e.errno)
 
