@@ -24,5 +24,8 @@ distutils.core.setup(
     url = "http://github.com/tadeas/fastjsonrpc",
     license = "http://www.apache.org/licenses/LICENSE-2.0",
     description = "A library for writing asynchronous JSON-RPC servers and clients in Python, using Twisted.",
-    long_description = open("README.md").read()
+    long_description = open("README.md").read(),
+    classifiers = [
+        'Development Status :: 3 - Alpha',
+        ]
 )
