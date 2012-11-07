@@ -9,3 +9,5 @@ tags
 _trial_temp
 tests/profile.data
 pylint*
+MANIFEST
+dist/*
