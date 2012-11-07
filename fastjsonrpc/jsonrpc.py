@@ -101,6 +101,7 @@ def encodeRequest(method, args=None, id_=0, version=VERSION_1):
 
     @rtype: str
     @return: JSON representation of the request
+    @TODO support batch requests
     """
 
     request = {}
@@ -131,6 +132,7 @@ def decodeResponse(json_response):
     @return: What the function returned
 
     @raise ValueError: If the response is not valid JSON-RPC response.
+    @TODO support batch requests
     """
 
     response = jloads(json_response)

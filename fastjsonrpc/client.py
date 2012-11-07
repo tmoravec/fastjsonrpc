@@ -148,7 +148,7 @@ class Proxy(object):
 
         @rtype: t.i.d.Deferred
         @return: Deferred, that will fire with whatever the 'method' returned.
-        @TODO support **kwargs
+        @TODO support batch requests
         """
 
         if kwargs:
