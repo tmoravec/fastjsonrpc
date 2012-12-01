@@ -368,3 +368,5 @@ class JSONRPCError(Exception):
         self.data = data
         self.id_ = id_
         self.version = version
+
+        Exception.__init__(self, strerror)
