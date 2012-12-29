@@ -12,7 +12,7 @@ def printValue(value):
 
 
 def printError(error):
-    print 'error', error
+    print 'error', error.value
 
 
 def shutDown(data):
