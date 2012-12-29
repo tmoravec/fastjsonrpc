@@ -36,6 +36,10 @@ d = proxy.callRemote('mysql_first_user')
 d.addCallbacks(printValue, printError)
 ds.append(d)
 
+d = proxy.callRemote('none')
+d.addCallbacks(printValue, printError)
+ds.append(d)
+
 ds = defer.DeferredList(ds)
 ds.addCallback(shutDown)
 

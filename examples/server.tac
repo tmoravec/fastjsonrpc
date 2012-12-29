@@ -14,6 +14,9 @@ class Example(JSONRPCServer):
     def jsonrpc_echo(self, data):
         return data
 
+    def jsonrpc_none(self):
+        raise Exception('vyjimka')
+
     def jsonrpc_add(self, a, b):
         return a + b
 
