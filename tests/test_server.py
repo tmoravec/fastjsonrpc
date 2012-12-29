@@ -292,7 +292,7 @@ class TestRender(TestCase):
 
     def test_noSuchMethodV2(self):
         request = DummyRequest([''])
-        request.content = StringIO('{"method": "aaaa", "id": 1, ' + \
+        request.content = StringIO('{"method": "aaaa", "id": 1, ' +
                                    '"jsonrpc": "2.0"}')
         d = _render(self.srv, request)
 
@@ -322,7 +322,7 @@ class TestRender(TestCase):
 
     def test_keywordsOkV1(self):
         request = DummyRequest([''])
-        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' +
                                    '{"data": "arg"}}')
         d = _render(self.srv, request)
 
@@ -335,7 +335,7 @@ class TestRender(TestCase):
 
     def test_keywordsOkV2(self):
         request = DummyRequest([''])
-        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' +
                                    '{"data": "arg"}, "jsonrpc": "2.0"}')
         d = _render(self.srv, request)
 
@@ -348,7 +348,7 @@ class TestRender(TestCase):
 
     def test_keywordsUnexpected(self):
         request = DummyRequest([''])
-        request.content = StringIO('{"method": "echo", "id": 1, "params": ' + \
+        request.content = StringIO('{"method": "echo", "id": 1, "params": ' +
                                    '{"wrongname": "arg"}}')
         d = _render(self.srv, request)
 
