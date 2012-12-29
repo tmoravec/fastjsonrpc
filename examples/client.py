@@ -7,6 +7,7 @@ from twisted.internet import defer
 
 from fastjsonrpc.client import Proxy
 
+
 def printValue(value):
     print "Result: %s" % str(value)
 

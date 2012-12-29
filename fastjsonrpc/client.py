@@ -34,6 +34,7 @@ from twisted.web.http_headers import Headers
 
 import jsonrpc
 
+
 class ReceiverProtocol(Protocol):
     """
     Protocol for receiving the server response. It's only purpose is to get the
@@ -101,8 +102,8 @@ class StringProducer(object):
 class Proxy(object):
     """
     A proxy to one specific JSON-RPC server. Pass the server URL to the
-    constructor and call proxy.callRemote('method', *args) to call 'method' with
-    *args.
+    constructor and call proxy.callRemote('method', *args) to call 'method'
+    with *args.
     """
 
     def __init__(self, url, version=jsonrpc.VERSION_1):
@@ -126,8 +127,8 @@ class Proxy(object):
         @param response: Response object from the call
 
         @rtype: t.i.d.Deferred
-        @return: Deferred, that will fire callback with body of the response (as
-        string)
+        @return: Deferred, that will fire callback with body of the response
+            (as string)
         """
 
         finished = Deferred()

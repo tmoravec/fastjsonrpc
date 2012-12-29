@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from twisted.enterprise import adbapi
 from fastjsonrpc.server import JSONRPCServer
 
+
 class DummyServer(JSONRPCServer):
 
     def jsonrpc_echo(self, data):

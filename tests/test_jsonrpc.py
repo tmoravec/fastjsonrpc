@@ -8,6 +8,7 @@ from fastjsonrpc import jsonrpc
 from fastjsonrpc.jsonrpc import JSONRPCError
 from twisted.trial.unittest import TestCase
 
+
 class TestEncodeRequest(TestCase):
 
     def test_noArgs(self):
@@ -72,14 +73,15 @@ class TestEncodeRequest(TestCase):
 
     def test_methodArgsVersion2(self):
         result = jsonrpc.encodeRequest('method', 'abcdef', version=2)
-        pattern = '\{"jsonrpc": "2.0", "params": "abcdef", "method": "method", '
-        pattern += '"id": \d+\}'
+        pattern = '\{"jsonrpc": "2.0", "params": "abcdef", "method": '
+        pattern += '"method", "id": \d+\}'
         self.assertTrue(re.match(pattern, result))
 
     def test_all(self):
-        result = jsonrpc.encodeRequest('method', 'abcdef', id_=123, version=2.0)
-        expected = '{"jsonrpc": "2.0", "params": "abcdef", "method": "method", '
-        expected += '"id": 123}'
+        result = jsonrpc.encodeRequest('method', 'abcdef', id_=123,
+                                       version=2.0)
+        expected = '{"jsonrpc": "2.0", "params": "abcdef", "method": '
+        expected += '"method", "id": 123}'
         self.assertEquals(result, expected)
 
 
@@ -241,7 +243,8 @@ class TestPrepareMethodResponse(TestCase):
         self.assertEquals(result, expected)
 
     def test_methodNotFount(self):
-        response = JSONRPCError('Method aa not found', jsonrpc.METHOD_NOT_FOUND)
+        response = JSONRPCError('Method aa not found',
+                                jsonrpc.METHOD_NOT_FOUND)
         result = jsonrpc.prepareMethodResponse(response, 123)
         expected = {"result": None, "id": 123,
                     "error": {"message": "Method aa not found",
@@ -302,7 +305,6 @@ class TestDecodeResponse(TestCase):
             self.assertEquals(e.strerror, 'some error')
             self.assertEquals(e.errno, 123)
             self.assertEquals(e.version, jsonrpc.VERSION_1)
-
 
     def test_errorAndResult(self):
         response = '{"error": {"message": "some error", "code": 123}, '

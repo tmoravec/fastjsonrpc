@@ -49,7 +49,8 @@ INVALID_PARAMS = -32602
 INTERNAL_ERROR = -32603
 
 ID_MIN = 1
-ID_MAX = 2**31 - 1  # 32-bit maxint
+ID_MAX = 2 ** 31 - 1  # 32-bit maxint
+
 
 def jdumps(obj):
     """
@@ -66,6 +67,7 @@ def jdumps(obj):
     else:
         return json.dumps(obj)
 
+
 def jloads(json_string):
     """
     Decode JSON no matter what library did we import
@@ -81,20 +83,21 @@ def jloads(json_string):
     else:
         return json.loads(json_string)
 
+
 def encodeRequest(method, args=None, id_=0, version=VERSION_1):
     """
     Return a JSON object representation of the request.
 
     @type id_: int or None
     @param id_: request ID. If None, a notification will be sent. If 0 (the
-    default), we'll coin some random.
+        default), we'll coin some random.
 
     @type method: str
     @param method: Method name
 
     @type args: list
     @param args: List of arguments for the method. Note that packing of the
-    arguments is up to the caller!
+        arguments is up to the caller!
 
     @type version: float
     @param version: Which JSON-RPC version to use? Defaults to version 1.
@@ -119,6 +122,7 @@ def encodeRequest(method, args=None, id_=0, version=VERSION_1):
         request['jsonrpc'] = '2.0'
 
     return jdumps(request)
+
 
 def decodeResponse(json_response):
     """
@@ -162,6 +166,7 @@ def decodeResponse(json_response):
 
     raise ValueError('Not a valid JSON-RPC response')
 
+
 def decodeRequest(request):
     """
     Decodes the JSON encoded request.
@@ -171,7 +176,7 @@ def decodeRequest(request):
 
     @rtype: mixed
     @return: Whatever the client sent, most probably a list (in the case of
-    a batch request) or dict (in the case of a single method call).
+        a batch request) or dict (in the case of a single method call).
 
     @raise JSONRPCError: If there's error in parsing.
     """
@@ -183,10 +188,12 @@ def decodeRequest(request):
 
     return decoded
 
+
 def verifyMethodCall(request):
     """
     Verifies a single method call. We call this for every method in case of a
-    batch request. If there are any params missing and we don't need it, add it.
+    batch request. If there are any params missing and we don't need it, add
+    it.
 
     @type request: dict
     @param request: Decoded request from user
@@ -195,8 +202,8 @@ def verifyMethodCall(request):
     @return: What we got, possibly with some keys more.
 
     @raise JSONRPCError: If there's anything wrong with the request, raise
-    JSONRPCError with description of what's wrong. Attempts to add to it as much
-    information as possible (id, version).
+    JSONRPCError with description of what's wrong. Attempts to add to it
+        as much information as possible (id, version).
     """
     try:
         # 'jsonrpc' is only contained in V2 requests
@@ -237,6 +244,7 @@ def verifyMethodCall(request):
         else:
             raise JSONRPCError(e.strerror, e.errno)
 
+
 def _getErrorResponse(exception):
     """
     Parses Exception into a dict, that can be encoded to JSON.
@@ -269,6 +277,7 @@ def _getErrorResponse(exception):
         pass
 
     return error_result
+
 
 def prepareMethodResponse(result, id_=None, version=VERSION_1):
     """

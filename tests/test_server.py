@@ -10,6 +10,7 @@ from twisted.internet.defer import succeed
 
 from dummyserver import DummyServer
 
+
 def _render(resource, request):
     result = resource.render(request)
     if isinstance(result, str):
@@ -130,8 +131,8 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            expected = '{"result": null, "id": "ABCD", "error": {"message": ' +\
-                       '"Method ECHO not found", "code": -32601}}'
+            expected = '{"result": null, "id": "ABCD", "error": {' + \
+                       '"message": "Method ECHO not found", "code": -32601}}'
             self.assertEquals(request.written[0], expected)
 
         d.addCallback(rendered)
@@ -353,8 +354,8 @@ class TestRender(TestCase):
 
         def rendered(_):
             expected = '{"result": null, "id": 1, "error": {"message": ' + \
-                       '"jsonrpc_echo() got an unexpected keyword argument ' + \
-                       '\'wrongname\'", "code": -32602}}'
+                       '"jsonrpc_echo() got an unexpected keyword argument' + \
+                       ' \'wrongname\'", "code": -32602}}'
 
             self.assertEquals(request.written[0], expected)
 
@@ -363,7 +364,7 @@ class TestRender(TestCase):
 
     def test_batch(self):
         json = '[{"method": "echo", "id": 1, "params": {"data": "arg"}}, ' + \
-                '{"method": "echo", "id": 2, "params": {"data": "arg"}}]'
+               '{"method": "echo", "id": 2, "params": {"data": "arg"}}]'
         request = DummyRequest([''])
         request.content = StringIO(json)
         d = _render(self.srv, request)
@@ -378,7 +379,7 @@ class TestRender(TestCase):
 
     def test_batchNotificationOnly(self):
         json = '[{"method": "echo", "params": {"data": "arg"}}, ' + \
-                '{"method": "echo", "params": {"data": "arg"}}]'
+               '{"method": "echo", "params": {"data": "arg"}}]'
         request = DummyRequest([''])
         request.content = StringIO(json)
         d = _render(self.srv, request)
@@ -392,7 +393,7 @@ class TestRender(TestCase):
     def test_batchNotificationMixed(self):
         json = '[{"method": "echo", "id": 1, "params": {"data": "arg"}}, ' + \
                '{"method": "echo", "id": 2, "params": {"data": "arg"}}, ' + \
-                '{"method": "echo", "params": {"data": "arg"}}]'
+               '{"method": "echo", "params": {"data": "arg"}}]'
         request = DummyRequest([''])
         request.content = StringIO(json)
         d = _render(self.srv, request)
@@ -407,15 +408,15 @@ class TestRender(TestCase):
 
     def test_batchV1V2(self):
         json = '[{"method": "echo", "id": 1, "params": ["arg"]}, ' + \
-                '{"method": "echo", "id": "abc", "params": ["arg"], ' + \
-                 '"jsonrpc": "2.0"}]'
+               '{"method": "echo", "id": "abc", "params": ["arg"], ' + \
+               '"jsonrpc": "2.0"}]'
         request = DummyRequest([''])
         request.content = StringIO(json)
         d = _render(self.srv, request)
 
         def rendered(_):
             expected = '[{"error": null, "id": 1, "result": "arg"}, ' + \
-                        '{"jsonrpc": "2.0", "id": "abc", "result": "arg"}]'
+                       '{"jsonrpc": "2.0", "id": "abc", "result": "arg"}]'
             self.assertEquals(request.written[0], expected)
 
         d.addCallback(rendered)
@@ -436,7 +437,7 @@ class TestRender(TestCase):
 
     def test_batchNotificationAndSingle(self):
         json = '[{"method": "echo", "id": 1, "params": ["arg"]}, ' + \
-                '{"method": "echo", "params": ["arg"]}]'
+               '{"method": "echo", "params": ["arg"]}]'
         request = DummyRequest([''])
         request.content = StringIO(json)
         d = _render(self.srv, request)

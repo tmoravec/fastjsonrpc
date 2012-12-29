@@ -241,4 +241,3 @@ class TestProxy(TestCase):
 
         e.addCallback(finished)
         return d
-

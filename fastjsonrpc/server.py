@@ -29,6 +29,7 @@ from twisted.internet.defer import succeed
 
 import jsonrpc
 
+
 class JSONRPCServer(resource.Resource):
     """
     JSON-RPC server. Subclass this, implement your own methods and publish
@@ -107,16 +108,16 @@ class JSONRPCServer(resource.Resource):
 
     def render(self, request):
         """
-        This is the 'main' RPC method. This will always be called when a request
-        arrives and it's up to this method to parse the request and
+        This is the 'main' RPC method. This will always be called when
+        a request arrives and it's up to this method to parse the request and
         dispatch it further.
 
         @type request: t.w.s.Request
         @param request: Request from client
 
         @rtype: some constant :-)
-        @return: NOT_DONE_YET signalizing, that there's Deferred, that will take
-        care about sending the response.
+        @return: NOT_DONE_YET signalizing, that there's Deferred, that will
+            take care about sending the response.
         """
 
         try:
@@ -187,4 +188,3 @@ class JSONRPCServer(resource.Resource):
             request.write(response)
 
         request.finish()
-
