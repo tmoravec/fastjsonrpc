@@ -11,3 +11,4 @@ tests/profile.data
 pylint*
 MANIFEST
 dist/*
+.ropeproject
