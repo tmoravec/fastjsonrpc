@@ -22,7 +22,7 @@ Provides JSONRPCServer class, which can be used to expose methods via RPC.
 """
 
 from twisted.protocols import basic
-#from twisted.python import log
+from twisted.python import log
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -31,38 +31,92 @@ from twisted.internet.defer import Deferred
 import jsonrpc
 
 
-class JSONRPCProtocol(basic.NetstringReceiver):
+class CallbackProtocol(basic.NetstringReceiver):
+    """
+    Protocol with callback. It will call given callback after it receives
+    full data.
+    """
+
+    def __init__(self, callback):
+        """
+        @type callback: callable
+        @param callback: Callable to call with string we have received
+        """
+
+        self.callback = callback
 
     def stringReceived(self, string):
         """
+        Call our callback with string we have received and close connection
+
+        @type string: str|unicode
+        @param string: The netstring we have received, striped of the
+            netstring stuff
         """
-        self.factory.responseReceived(string)
+
+        self.callback(string)
         self.transport.loseConnection()
 
 
-class JSONRPCClientFactory(Factory):
+class CallbackFactory(Factory):
+    """
+    Factory with callback. It will call given callback after the protocol
+    receives full data.
+    """
 
-    def __init__(self, json_string, proxy):
+    def __init__(self, callback):
+        """
+        @type callback: callable
+        @param callback: Callable to call when our Protocol called us with
+            some data
+        """
 
-        self.json_string = json_string
-        self.response = None
-        self.proxy = proxy
+        self.callback = callback
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, _):
+        """
+        We need to pass our callback to the CallbackProtocol's constructor,
+        so we cannot just use CallbackFactory.protocol = CallbackProtocol.
 
-        p = JSONRPCProtocol()
-        p.factory = self
-        return p
+        The _ argument is here just to satisfy the interface, we don't use it.
+        """
 
-    def responseReceived(self, json_response):
+        return CallbackProtocol(self.responseReceived)
 
-        self.proxy.responseReceived(json_response)
+    def responseReceived(self, string):
+        """
+        This is what the Protocol calls after it receives data. We just pass
+        it to whatever callback we were given.
+
+        @type string: mixed
+        @param string: what the Protocol received and we pass on
+        """
+
+        self.callback(string)
 
 
 class Proxy(object):
+    """
+    A proxy to one specific JSON-RPC server. Pass the server URL to the
+    constructor and call proxy.callRemote('method', *args) to call 'method'
+    with *args or **kwargs.
+    """
 
     def __init__(self, url, version=jsonrpc.VERSION_1, timeout=30,
                  verbose=False):
+        """
+        @type url: str
+        @param url: URL of the RPC server, including the port
+
+        @type version: float
+        @param version: Which JSON-RPC version to use? Defaults to version 1.
+
+        @type timeout: int
+        @param timeout: Timeout of the call in seconds
+
+        @type verbose: bool
+        @param verbose: If True, we log the outgoing and incoming JSON
+        """
 
         self.hostname, self.port = url.split(':')
         self.port = int(self.port)
@@ -70,15 +124,60 @@ class Proxy(object):
         self.timeout = timeout
         self.verbose = verbose
 
-    def gotProtocol(self, p, json_request):
+    def connectionMade(self, protocol, json_request):
+        """
+        This is called after we make the connection with the protocol for this
+        connection. The connection is established, so we send the (already
+        encoded) request.
 
-        p.sendString(json_request)
+        @type protocol: t.i.p.Protocol
+        @param protocol: Protocol that matches the new made connection
+
+        @type json_request: str|unicode
+        @param json_request: The already encoded request
+        """
+
+        protocol.sendString(json_request)
 
     def responseReceived(self, json_response):
+        """
+        This gets called by the factory after we received a response. We
+        decode it and fire the response deferred with result. The response
+        deffered is the one the client will get.
+
+        @type json_response: str|unic
+        @param json_response: The response from the server
+        """
+
+        if self.verbose:
+            log('Response: %s' % json_response)
 
         self.response_deferred.callback(json_response)
 
     def callRemote(self, method, *args, **kwargs):
+        """
+        Remotely calls the method, with args. Given that we keep reference to
+        the call via the Deferred, there's no need for id. It will coin some
+        random anyway, just to satisfy the spec.
+
+        According to the spec, we cannot use either args and kwargs at once.
+        If there are kwargs, they get used and args are ignored.
+
+
+        @type method: str
+        @param method: Method name
+
+        @type *args: list
+        @param *args: List of agruments for the method. It gets ignored if
+            kwargs is not empty.
+
+        @type **kwargs: dict
+        @param **kwargs: Dict of positional arguments for the method
+
+        @rtype: t.i.d.Deferred
+        @return: Deferred, that will fire with whatever the 'method' returned.
+        @TODO support batch requests
+        """
 
         if kwargs:
             json_request = jsonrpc.encodeRequest(method, kwargs,
@@ -88,13 +187,13 @@ class Proxy(object):
                                                  version=self.version)
 
         if self.verbose:
-            print ('Sending: %s' % json_request)
+            log('Sending: %s' % json_request)
 
-        self.factory = JSONRPCClientFactory(json_request, self)
+        self.factory = CallbackFactory(self.responseReceived)
         point = TCP4ClientEndpoint(reactor, self.hostname, self.port,
                                    timeout=self.timeout)
         d = point.connect(self.factory)
-        d.addCallback(self.gotProtocol, json_request)
+        d.addCallback(self.connectionMade, json_request)
 
         self.response_deferred = Deferred()
         return self.response_deferred
