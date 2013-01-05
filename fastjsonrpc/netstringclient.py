@@ -145,12 +145,12 @@ class Proxy(object):
         decode it and fire the response deferred with result. The response
         deffered is the one the client will get.
 
-        @type json_response: str|unic
+        @type json_response: str|unicode
         @param json_response: The response from the server
         """
 
         if self.verbose:
-            log('Response: %s' % json_response)
+            log.msg('Response received: %s' % json_response)
 
         self.response_deferred.callback(json_response)
 
@@ -187,7 +187,7 @@ class Proxy(object):
                                                  version=self.version)
 
         if self.verbose:
-            log('Sending: %s' % json_request)
+            log.msg('Sending: %s' % json_request)
 
         self.factory = CallbackFactory(self.responseReceived)
         point = TCP4ClientEndpoint(reactor, self.hostname, self.port,
