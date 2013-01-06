@@ -195,5 +195,8 @@ class Proxy(object):
         d = point.connect(self.factory)
         d.addCallback(self.connectionMade, json_request)
 
+        # self.response_deferred will be fired in self.responseReceived, after
+        # we got response from the RPC server
         self.response_deferred = Deferred()
+        self.response_deferred.addCallback(jsonrpc.decodeResponse)
         return self.response_deferred
