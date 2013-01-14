@@ -29,7 +29,7 @@ from twisted.web.iweb import IBodyProducer
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent
+from twisted.web.client import Agent, WebClientContextFactory
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -106,18 +106,24 @@ class Proxy(object):
     with *args.
     """
 
-    def __init__(self, url, version=jsonrpc.VERSION_1):
+    def __init__(self, url, version=jsonrpc.VERSION_1,
+                 contextFactory=WebClientContextFactory()):
         """
         @type url: str
-        @param url: URL of the RPC server. Only supports HTTP for now, HTTPS
-        (and more) might come in the future.
+        @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
+        more might come in the future.
 
         @type version: int
         @param version: Which JSON-RPC version to use? The default is 1.0.
+
+        @type contextFactory: twisted.internet.ssl.ClientContextFactory
+        @param contextFactory: A context factory for SSL clients.
         """
 
         self.url = url
         self.version = version
+
+        self.agent = Agent(reactor, contextFactory=contextFactory)
 
     def bodyFromResponse(self, response):
         """
@@ -159,7 +165,7 @@ class Proxy(object):
             json_request = jsonrpc.encodeRequest(method, args,
                                                  version=self.version)
 
-        agent = Agent(reactor)
+        agent = self.agent
         body = StringProducer(json_request)
         headers = Headers({'Content-Type': ['application/json'],
                            'Content-Length': [str(body.length)]})
