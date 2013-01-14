@@ -106,7 +106,7 @@ class Proxy(object):
     with *args.
     """
 
-    def __init__(self, url, version=jsonrpc.VERSION_1):
+    def __init__(self, url, version=jsonrpc.VERSION_1, connectTimeout=None):
         """
         @type url: str
         @param url: URL of the RPC server. Only supports HTTP for now, HTTPS
@@ -114,10 +114,15 @@ class Proxy(object):
 
         @type version: int
         @param version: Which JSON-RPC version to use? The default is 1.0.
+
+        @type connectTimeout: float
+        @param connectTimeout: Connection timeout.
         """
 
         self.url = url
         self.version = version
+
+        self.agent = Agent(reactor, connectTimeout=connectTimeout)
 
     def bodyFromResponse(self, response):
         """
