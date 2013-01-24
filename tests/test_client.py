@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred
 from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.web.client import Agent
+from twisted.internet.error import TimeoutError
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
@@ -246,4 +247,16 @@ class TestProxy(TestCase):
             self.assertEquals(result.errno, jsonrpc.INVALID_PARAMS)
 
         e.addCallback(finished)
+        return d
+
+    def test_timeout(self):
+        """ Google doesn't offer any services on our crazy ports """
+        addr = 'http://google.com:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1, connectTimeout=0.1)
+        d = proxy.callRemote('sleep', 5)
+
+        def finished(result):
+            self.assertTrue(isinstance(result.value, TimeoutError))
+
+        d.addErrback(finished)
         return d
