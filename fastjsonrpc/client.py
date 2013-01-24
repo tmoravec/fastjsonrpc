@@ -111,6 +111,7 @@ class Proxy(object):
         @type url: str
         @param url: URL of the RPC server. Only supports HTTP for now, HTTPS
         (and more) might come in the future.
+        @TODO more detailed description of url
 
         @type version: int
         @param version: Which JSON-RPC version to use? The default is 1.0.

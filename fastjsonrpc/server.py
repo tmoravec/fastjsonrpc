@@ -118,6 +118,8 @@ class JSONRPCServer(resource.Resource):
         @rtype: some constant :-)
         @return: NOT_DONE_YET signalizing, that there's Deferred, that will
             take care about sending the response.
+
+        @TODO verbose mode
         """
 
         try:
@@ -156,6 +158,8 @@ class JSONRPCServer(resource.Resource):
 
         @type request: t.w.s.Request
         @param request: The request that came from a client
+
+        @TODO: document is_batch
         """
 
         method_responses = []

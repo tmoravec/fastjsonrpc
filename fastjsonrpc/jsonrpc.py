@@ -179,6 +179,7 @@ def decodeRequest(request):
         a batch request) or dict (in the case of a single method call).
 
     @raise JSONRPCError: If there's error in parsing.
+    @TODO if cjson_loaded catch cjson.DecodeError
     """
 
     try:
