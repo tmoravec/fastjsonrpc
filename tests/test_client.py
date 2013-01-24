@@ -6,6 +6,7 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 from twisted.web.server import Site
 from twisted.internet import reactor
+from twisted.web.client import Agent
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
@@ -117,6 +118,11 @@ class TestProxy(TestCase):
         proxy = Proxy(url, version)
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
+
+    def test_init_agent(self):
+        proxy = Proxy('', '')
+
+        self.assertTrue(isinstance(proxy.agent, Agent))
 
     def test_bodyFromResponseProtocolBody(self):
         data = 'some random string'
