@@ -116,7 +116,9 @@ class Proxy(object):
         @param version: Which JSON-RPC version to use? The default is 1.0.
 
         @type connectTimeout: float
-        @param connectTimeout: Connection timeout.
+        @param connectTimeout: Connection timeout. Note that we don't connect
+            when creating this object, but in callRemote, so the timeout
+            will apply to callRemote.
         """
 
         self.url = url
