@@ -164,12 +164,11 @@ class Proxy(object):
             json_request = jsonrpc.encodeRequest(method, args,
                                                  version=self.version)
 
-        agent = Agent(reactor)
         body = StringProducer(json_request)
         headers = Headers({'Content-Type': ['application/json'],
                            'Content-Length': [str(body.length)]})
 
-        d = agent.request('POST', self.url, headers, body)
+        d = self.agent.request('POST', self.url, headers, body)
         d.addCallback(self.bodyFromResponse)
         d.addCallback(jsonrpc.decodeResponse)
         return d
