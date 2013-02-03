@@ -8,6 +8,8 @@ from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
+from twisted.web.client import WebClientContextFactory
+from twisted.internet import ssl
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
@@ -259,4 +261,43 @@ class TestProxy(TestCase):
             self.assertTrue(isinstance(result.value, TimeoutError))
 
         d.addErrback(finished)
+        return d
+
+class TestSSLProxy(TestCase):
+
+    def setUp(self):
+        site = Site(DummyServer())
+
+        SSLFactory = ssl.DefaultOpenSSLContextFactory('../ssl-keys/server.key',
+                                                   '../ssl-keys/server.crt')
+        self.port = reactor.listenSSL(0, site, contextFactory=SSLFactory)
+        self.portNumber = self.port._realPortNumber
+
+    def tearDown(self):
+        self.port.stopListening()
+
+    def test_init(self):
+        url = 'https://example.org/abcdef'
+        version = '2.0'
+
+        proxy = Proxy(url, version, contextFactory=WebClientContextFactory())
+        self.assertEquals(proxy.url, url)
+        self.assertEquals(proxy.version, version)
+
+    def test_init_agent(self):
+        proxy = Proxy('', '', contextFactory=WebClientContextFactory())
+        self.assertTrue(isinstance(proxy.agent, Agent))
+        self.assertTrue(isinstance(proxy.agent._contextFactory, ssl.ClientContextFactory))
+
+    def test_callRemote(self):
+        data = 'some random string'
+
+        addr = 'https://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1, contextFactory=WebClientContextFactory())
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
         return d
