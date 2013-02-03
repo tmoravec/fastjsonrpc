@@ -290,6 +290,10 @@ class TestSSLProxy(TestCase):
         self.assertTrue(isinstance(proxy.agent._contextFactory, ssl.ClientContextFactory))
 
     def test_callRemote(self):
+        """
+        The test itself passes, but trial raises "Reactor was unclean" after tearDown.. Might be related to
+        http://twistedmatrix.com/trac/ticket/5118
+        """
         data = 'some random string'
 
         addr = 'https://localhost:%s' % self.portNumber
