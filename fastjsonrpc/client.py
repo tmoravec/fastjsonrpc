@@ -217,6 +217,11 @@ class Proxy(object):
         return d
 
     def _getBasicHTTPAuthHeaders(self):
+        """
+        @rtype dict
+        @return 'Authorization' header
+        """
+
         if not self.auth_headers:
             username = self.credentials.username
             password = self.credentials.password
