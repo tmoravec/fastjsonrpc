@@ -22,10 +22,13 @@ Provides a Proxy class, that can be used for calling remote functions via
 JSON-RPC.
 """
 
+import base64
+
 from zope.interface import implements
 from twisted.internet.defer import succeed
 from twisted.web.iweb import IBodyProducer
 
+from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
@@ -107,6 +110,7 @@ class Proxy(object):
     """
 
     def __init__(self, url, version=jsonrpc.VERSION_1, connectTimeout=None,
+                 credentials=Anonymous(),
                  contextFactory=WebClientContextFactory()):
         """
         @type url: str
@@ -121,6 +125,10 @@ class Proxy(object):
             when creating this object, but in callRemote, so the timeout
             will apply to callRemote.
 
+        @type credentials: twisted.cred.credentials.ICredentials
+        @param credentials: Credentials for basic HTTP authentication.
+            Supported are Anonymous and UsernamePassword classes.
+
         @type contextFactory: twisted.internet.ssl.ClientContextFactory
         @param contextFactory: A context factory for SSL clients.
         """
@@ -128,8 +136,14 @@ class Proxy(object):
         self.url = url
         self.version = version
 
+        if not isinstance(credentials, (Anonymous, UsernamePassword)):
+            raise NotImplementedError(
+                "'%s' credentials are not supported" % type(credentials))
+
         self.agent = Agent(reactor, connectTimeout=connectTimeout,
                            contextFactory=contextFactory)
+        self.credentials = credentials
+        self.auth_headers = None
 
     def bodyFromResponse(self, response):
         """
@@ -172,10 +186,27 @@ class Proxy(object):
                                                  version=self.version)
 
         body = StringProducer(json_request)
-        headers = Headers({'Content-Type': ['application/json'],
-                           'Content-Length': [str(body.length)]})
+
+        headers_dict = {'Content-Type': ['application/json'],
+                        'Content-Length': [str(body.length)]}
+        if not isinstance(self.credentials, Anonymous):
+            headers_dict.update(self._getBasicHTTPAuthHeaders())
+        headers = Headers(headers_dict)
 
         d = self.agent.request('POST', self.url, headers, body)
         d.addCallback(self.bodyFromResponse)
         d.addCallback(jsonrpc.decodeResponse)
         return d
+
+    def _getBasicHTTPAuthHeaders(self):
+        if not self.auth_headers:
+            username = self.credentials.username
+            password = self.credentials.password
+            if password is None:
+                password = ''
+
+            encoded_cred = base64.encodestring('%s:%s' % (username, password))
+            auth_value = "Basic " + encoded_cred.strip()
+            self.auth_headers = {'Authorization': [auth_value]}
+
+        return self.auth_headers
