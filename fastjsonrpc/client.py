@@ -145,6 +145,23 @@ class Proxy(object):
         self.credentials = credentials
         self.auth_headers = None
 
+    def checkAuthError(self, response):
+        """
+        Check for authentication error.
+
+        @type response: t.w.c.Response
+        @param response: Response object from the call
+
+        @raise JSONRPCError: If the call failed with authorization error
+
+        @rtype: t.w.c.Response
+        @return If there was no error, just return the response
+        """
+
+        if response.code == 401:
+            raise jsonrpc.JSONRPCError('Unauthorized', jsonrpc.INVALID_REQUEST)
+        return response
+
     def bodyFromResponse(self, response):
         """
         Parses out the body from the response
@@ -194,6 +211,7 @@ class Proxy(object):
         headers = Headers(headers_dict)
 
         d = self.agent.request('POST', self.url, headers, body)
+        d.addCallback(self.checkAuthError)
         d.addCallback(self.bodyFromResponse)
         d.addCallback(jsonrpc.decodeResponse)
         return d
