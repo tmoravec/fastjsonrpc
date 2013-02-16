@@ -269,7 +269,7 @@ class TestSSLProxy(TestCase):
         site = Site(DummyServer())
 
         SSLFactory = ssl.DefaultOpenSSLContextFactory('../ssl-keys/server.key',
-                                                   '../ssl-keys/server.crt')
+                                                      '../ssl-keys/server.crt')
         self.port = reactor.listenSSL(0, site, contextFactory=SSLFactory)
         self.portNumber = self.port._realPortNumber
 
@@ -287,17 +287,20 @@ class TestSSLProxy(TestCase):
     def test_init_agent(self):
         proxy = Proxy('', '', contextFactory=WebClientContextFactory())
         self.assertTrue(isinstance(proxy.agent, Agent))
-        self.assertTrue(isinstance(proxy.agent._contextFactory, ssl.ClientContextFactory))
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                                   ssl.ClientContextFactory))
 
     def test_callRemote(self):
         """
-        The test itself passes, but trial raises "Reactor was unclean" after tearDown.. Might be related to
+        The test itself passes, but trial raises "Reactor was unclean" after
+        tearDown.. Might be related to
         http://twistedmatrix.com/trac/ticket/5118
         """
         data = 'some random string'
 
         addr = 'https://localhost:%s' % self.portNumber
-        proxy = Proxy(addr, jsonrpc.VERSION_1, contextFactory=WebClientContextFactory())
+        proxy = Proxy(addr, jsonrpc.VERSION_1,
+                      contextFactory=WebClientContextFactory())
         d = proxy.callRemote('echo', data)
 
         def finished(result):
