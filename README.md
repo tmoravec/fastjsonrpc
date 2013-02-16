@@ -1,4 +1,3 @@
-============
 Introduction
 ============
 
@@ -8,30 +7,36 @@ as possible.
 
 Read more about JSON-RPC at http://www.jsonrpc.org/
 
-============
+
 Features
-============
+========
 
 * Support for HTTP and HTTPS as protocol (via twisted.web), more might come
   in the future.
+
+* Support for HTTP authentization (only basic, not digest).
 
 * Full standards compliance.
 
 * Support both JSON-RPC standards at once - great if you don't control your
   clients.
 
-* 'Just work' with various clients (i.e. PHP, C++, JavaScript...)
+* 'Just work' with various clients (i.e. PHP, C++, JavaScript...).
 
-============
+* Detailed examples :-) .
+
+
 TODO
-============
+====
 
 * More tests, better (functionality) coverage. This applies to every project,
   always :-) .
 
-============
+* Finish support for netstring protocol.
+
+
 Notes
-============
+=====
 
 * JSON is well readable for a human. It's easy to use Wireshark
   (www.wireshark.org) or similar for debugging.
