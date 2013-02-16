@@ -14,7 +14,8 @@ Features
 * Support for HTTP and HTTPS as protocol (via twisted.web), more might come
   in the future.
 
-* Support for HTTP authentization (only basic, not digest).
+* Support for HTTP authentization - only basic, not digest; use SSL for better
+  security.
 
 * Full standards compliance.
 
