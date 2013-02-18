@@ -6,13 +6,21 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 from twisted.web.server import Site
 from twisted.internet import reactor
+from twisted.web.client import Agent
+from twisted.internet.error import TimeoutError
+from twisted.web.client import WebClientContextFactory
+from twisted.internet import ssl
+from twisted.cred.portal import Portal
+from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
+from twisted.cred.credentials import Anonymous, UsernamePassword
+from twisted.web.guard import HTTPAuthSessionWrapper, BasicCredentialFactory
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
 from fastjsonrpc.client import Proxy
 from fastjsonrpc import jsonrpc
 
-from dummyserver import DummyServer
+from dummyserver import DummyServer, AuthDummyServer
 
 
 class TestReceiverProtocol(TestCase):
@@ -117,6 +125,11 @@ class TestProxy(TestCase):
         proxy = Proxy(url, version)
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
+
+    def test_init_agent(self):
+        proxy = Proxy('', '')
+
+        self.assertTrue(isinstance(proxy.agent, Agent))
 
     def test_bodyFromResponseProtocolBody(self):
         data = 'some random string'
@@ -238,6 +251,175 @@ class TestProxy(TestCase):
                   '\'wrongname\''
             self.assertEquals(result.strerror, msg)
             self.assertEquals(result.errno, jsonrpc.INVALID_PARAMS)
+
+        e.addCallback(finished)
+        return d
+
+    def test_timeout(self):
+        """ Google doesn't offer any services on our crazy ports """
+        addr = 'http://google.com:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1, connectTimeout=0.1)
+        d = proxy.callRemote('sleep', 5)
+
+        def finished(result):
+            self.assertTrue(isinstance(result.value, TimeoutError))
+
+        d.addErrback(finished)
+        return d
+
+    def test_anonymousLogin(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1, credentials=Anonymous())
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_loginNotNeccessary(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        credentials = UsernamePassword('user', 'password')
+        proxy = Proxy(addr, credentials=credentials)
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+
+class TestSSLProxy(TestCase):
+
+    def setUp(self):
+        site = Site(DummyServer())
+
+        SSLFactory = ssl.DefaultOpenSSLContextFactory('../ssl-keys/server.key',
+                                                      '../ssl-keys/server.crt')
+        self.port = reactor.listenSSL(0, site, contextFactory=SSLFactory)
+        self.portNumber = self.port._realPortNumber
+
+    def tearDown(self):
+        self.port.stopListening()
+
+    def test_init(self):
+        url = 'https://example.org/abcdef'
+        version = '2.0'
+
+        proxy = Proxy(url, version, contextFactory=WebClientContextFactory())
+        self.assertEquals(proxy.url, url)
+        self.assertEquals(proxy.version, version)
+
+    def test_init_agent(self):
+        proxy = Proxy('', '', contextFactory=WebClientContextFactory())
+        self.assertTrue(isinstance(proxy.agent, Agent))
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                                   ssl.ClientContextFactory))
+
+    def test_callRemote(self):
+        """
+        The test itself passes, but trial raises "Reactor was unclean" after
+        tearDown.. Might be related to
+        http://twistedmatrix.com/trac/ticket/5118
+        """
+        data = 'some random string'
+
+        addr = 'https://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1,
+                      contextFactory=WebClientContextFactory())
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+class TestHTTPAuth(TestCase):
+
+    def setUp(self):
+        checker = InMemoryUsernamePasswordDatabaseDontUse(user='password')
+        portal = Portal(AuthDummyServer(), [checker])
+        credentialFactory = BasicCredentialFactory('localhost')
+        resource = HTTPAuthSessionWrapper(portal, [credentialFactory])
+        site = Site(resource)
+
+        self.port = reactor.listenTCP(0, site)
+        self.portNumber = self.port._realPortNumber
+
+    def tearDown(self):
+        self.port.stopListening()
+
+    def test_loginOk(self):
+        data = 'some random string'
+
+        addr = 'http://localhost:%s' % self.portNumber
+        credentials = UsernamePassword('user', 'password')
+        proxy = Proxy(addr, credentials=credentials)
+        d = proxy.callRemote('echo', data)
+
+        def finished(result):
+            self.assertEquals(result, data)
+
+        d.addCallback(finished)
+        return d
+
+    def test_loginWrongPassword(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        credentials = UsernamePassword('user', 'wrong password')
+        proxy = Proxy(addr, credentials=credentials)
+        d = proxy.callRemote('echo', '')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            self.assertEquals(result.strerror, 'Unauthorized')
+            self.assertEquals(result.errno, jsonrpc.INVALID_REQUEST)
+
+        e.addCallback(finished)
+        return d
+
+    def test_loginWrongUser(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        credentials = UsernamePassword('wrong user', 'password1')
+        proxy = Proxy(addr, credentials=credentials)
+        d = proxy.callRemote('echo', '')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            self.assertEquals(result.strerror, 'Unauthorized')
+            self.assertEquals(result.errno, jsonrpc.INVALID_REQUEST)
+
+        e.addCallback(finished)
+        return d
+
+    def test_noCredentials(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, jsonrpc.VERSION_1)
+        d = proxy.callRemote('echo', '')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            self.assertEquals(result.strerror, 'Unauthorized')
+            self.assertEquals(result.errno, jsonrpc.INVALID_REQUEST)
+
+        e.addCallback(finished)
+        return d
+
+    def test_anonymousError(self):
+        addr = 'http://localhost:%s' % self.portNumber
+        proxy = Proxy(addr, credentials=Anonymous())
+        d = proxy.callRemote('echo', '')
+        e = self.assertFailure(d, jsonrpc.JSONRPCError)
+
+        def finished(result):
+            self.assertEquals(result.strerror, 'Unauthorized')
+            self.assertEquals(result.errno, jsonrpc.INVALID_REQUEST)
 
         e.addCallback(finished)
         return d

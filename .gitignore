@@ -12,3 +12,4 @@ pylint*
 MANIFEST
 dist/*
 .ropeproject
+ssl-keys

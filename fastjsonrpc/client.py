@@ -22,14 +22,17 @@ Provides a Proxy class, that can be used for calling remote functions via
 JSON-RPC.
 """
 
+import base64
+
 from zope.interface import implements
 from twisted.internet.defer import succeed
 from twisted.web.iweb import IBodyProducer
 
+from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent
+from twisted.web.client import Agent, WebClientContextFactory
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -106,19 +109,58 @@ class Proxy(object):
     with *args.
     """
 
-    def __init__(self, url, version=jsonrpc.VERSION_1):
+    def __init__(self, url, version=jsonrpc.VERSION_1, connectTimeout=None,
+                 credentials=Anonymous(),
+                 contextFactory=WebClientContextFactory()):
         """
         @type url: str
-        @param url: URL of the RPC server. Only supports HTTP for now, HTTPS
-        (and more) might come in the future.
-        @TODO more detailed description of url
+        @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
+        more might come in the future.
 
         @type version: int
         @param version: Which JSON-RPC version to use? The default is 1.0.
+
+        @type connectTimeout: float
+        @param connectTimeout: Connection timeout. Note that we don't connect
+            when creating this object, but in callRemote, so the timeout
+            will apply to callRemote.
+
+        @type credentials: twisted.cred.credentials.ICredentials
+        @param credentials: Credentials for basic HTTP authentication.
+            Supported are Anonymous and UsernamePassword classes.
+
+        @type contextFactory: twisted.internet.ssl.ClientContextFactory
+        @param contextFactory: A context factory for SSL clients.
         """
 
         self.url = url
         self.version = version
+
+        if not isinstance(credentials, (Anonymous, UsernamePassword)):
+            raise NotImplementedError(
+                "'%s' credentials are not supported" % type(credentials))
+
+        self.agent = Agent(reactor, connectTimeout=connectTimeout,
+                           contextFactory=contextFactory)
+        self.credentials = credentials
+        self.auth_headers = None
+
+    def checkAuthError(self, response):
+        """
+        Check for authentication error.
+
+        @type response: t.w.c.Response
+        @param response: Response object from the call
+
+        @raise JSONRPCError: If the call failed with authorization error
+
+        @rtype: t.w.c.Response
+        @return If there was no error, just return the response
+        """
+
+        if response.code == 401:
+            raise jsonrpc.JSONRPCError('Unauthorized', jsonrpc.INVALID_REQUEST)
+        return response
 
     def bodyFromResponse(self, response):
         """
@@ -160,12 +202,34 @@ class Proxy(object):
             json_request = jsonrpc.encodeRequest(method, args,
                                                  version=self.version)
 
-        agent = Agent(reactor)
         body = StringProducer(json_request)
-        headers = Headers({'Content-Type': ['application/json'],
-                           'Content-Length': [str(body.length)]})
 
-        d = agent.request('POST', self.url, headers, body)
+        headers_dict = {'Content-Type': ['application/json'],
+                        'Content-Length': [str(body.length)]}
+        if not isinstance(self.credentials, Anonymous):
+            headers_dict.update(self._getBasicHTTPAuthHeaders())
+        headers = Headers(headers_dict)
+
+        d = self.agent.request('POST', self.url, headers, body)
+        d.addCallback(self.checkAuthError)
         d.addCallback(self.bodyFromResponse)
         d.addCallback(jsonrpc.decodeResponse)
         return d
+
+    def _getBasicHTTPAuthHeaders(self):
+        """
+        @rtype dict
+        @return 'Authorization' header
+        """
+
+        if not self.auth_headers:
+            username = self.credentials.username
+            password = self.credentials.password
+            if password is None:
+                password = ''
+
+            encoded_cred = base64.encodestring('%s:%s' % (username, password))
+            auth_value = "Basic " + encoded_cred.strip()
+            self.auth_headers = {'Authorization': [auth_value]}
+
+        return self.auth_headers

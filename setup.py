@@ -20,7 +20,7 @@ with open("README.md") as readme:
 
 distutils.core.setup(
     name = "fastjsonrpc",
-    version = "0.1.3",
+    version = "0.2.1",
     packages = ["fastjsonrpc"],
     author = "Tadeas Moravec",
     author_email = "tadeas.moravec@email.cz",
@@ -29,6 +29,6 @@ distutils.core.setup(
     description = "A library for writing asynchronous JSON-RPC servers and clients in Python, using Twisted.",
     long_description = long_description,
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         ]
 )
