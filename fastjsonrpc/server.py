@@ -184,7 +184,7 @@ class JSONRPCServer(resource.Resource):
         if response != '[]':
             # '[]' is result of batch request with notifications only
             request.setHeader('Content-Type', 'application/json')
-            request.setHeader('Content-Length', len(response))
+            request.setHeader('Content-Length', str(len(response)))
             request.write(response)
 
         request.finish()

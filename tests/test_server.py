@@ -78,7 +78,7 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            self.assertEquals(len(request.written[0]),
+            self.assertEquals(str(len(request.written[0])),
                               request.outgoingHeaders['content-length'])
 
         d.addCallback(rendered)
