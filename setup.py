@@ -20,7 +20,7 @@ with open("README.md") as readme:
 
 distutils.core.setup(
     name = "fastjsonrpc",
-    version = "0.2.1",
+    version = "0.2.3",
     packages = ["fastjsonrpc"],
     author = "Tadeas Moravec",
     author_email = "tadeas.moravec@email.cz",

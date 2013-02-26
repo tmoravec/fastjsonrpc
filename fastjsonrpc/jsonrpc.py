@@ -63,7 +63,10 @@ def jdumps(obj):
     @return: JSON representation of obj
     """
     if cjson_loaded:
-        return cjson.encode(obj)
+        try:
+            return cjson.encode(obj)
+        except cjson.EncodeError as e:
+            raise ValueError(str(e))
     else:
         return json.dumps(obj)
 
@@ -79,7 +82,10 @@ def jloads(json_string):
     @return: Whatever the JSON contained
     """
     if cjson_loaded:
-        return cjson.decode(json_string)
+        try:
+            return cjson.decode(json_string)
+        except cjson.DecodeError as e:
+            raise ValueError(str(e))
     else:
         return json.loads(json_string)
 
