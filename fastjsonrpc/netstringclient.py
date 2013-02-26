@@ -100,6 +100,10 @@ class Proxy(object):
     A proxy to one specific JSON-RPC server. Pass the server URL to the
     constructor and call proxy.callRemote('method', *args) to call 'method'
     with *args or **kwargs.
+
+    @TODO callRemote should not set any self.* attributes, else multiple
+        callRemote calls will fire the same deferred twice..
+        self.response_deferred is THE problem ;-)
     """
 
     def __init__(self, url, version=jsonrpc.VERSION_1, timeout=30,
