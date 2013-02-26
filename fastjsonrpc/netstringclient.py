@@ -189,10 +189,10 @@ class Proxy(object):
         if self.verbose:
             log.msg('Sending: %s' % json_request)
 
-        self.factory = CallbackFactory(self.responseReceived)
+        factory = CallbackFactory(self.responseReceived)
         point = TCP4ClientEndpoint(reactor, self.hostname, self.port,
                                    timeout=self.timeout)
-        d = point.connect(self.factory)
+        d = point.connect(factory)
         d.addCallback(self.connectionMade, json_request)
 
         # self.response_deferred will be fired in self.responseReceived, after
