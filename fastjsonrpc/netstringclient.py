@@ -95,6 +95,38 @@ class CallbackFactory(Factory):
         self.callback(string)
 
 
+class ResponseDeferred(Deferred):
+    """
+    Deferred the client gets. Proxy.callRemote returns an instance of this.
+    It fires 'itself' after the factory calls responseReceived.
+    """
+
+    def __init__(self, verbose=False):
+        """
+        Remember verbosity level for potential logging.
+
+        @type verbose: bool
+        @param verbose: If True, we log the response JSON
+        """
+
+        Deferred.__init__(self)
+        self.verbose = verbose
+
+    def responseReceived(self, json_response):
+        """
+        This gets called by the factory after we received a response. We
+        decode it and fire with result.
+
+        @type json_response: str|unicode
+        @param json_response: The response from the server
+        """
+
+        if self.verbose:
+            log.msg('Response received: %s' % json_response)
+
+        self.callback(json_response)
+
+
 class Proxy(object):
     """
     A proxy to one specific JSON-RPC server. Pass the server URL to the
@@ -143,21 +175,6 @@ class Proxy(object):
 
         protocol.sendString(json_request)
 
-    def responseReceived(self, json_response):
-        """
-        This gets called by the factory after we received a response. We
-        decode it and fire the response deferred with result. The response
-        deffered is the one the client will get.
-
-        @type json_response: str|unicode
-        @param json_response: The response from the server
-        """
-
-        if self.verbose:
-            log.msg('Response received: %s' % json_response)
-
-        self.response_deferred.callback(json_response)
-
     def callRemote(self, method, *args, **kwargs):
         """
         Remotely calls the method, with args. Given that we keep reference to
@@ -193,14 +210,14 @@ class Proxy(object):
         if self.verbose:
             log.msg('Sending: %s' % json_request)
 
-        factory = CallbackFactory(self.responseReceived)
+        response_deferred = ResponseDeferred(verbose=self.verbose)
+        factory = CallbackFactory(response_deferred.responseReceived)
         point = TCP4ClientEndpoint(reactor, self.hostname, self.port,
                                    timeout=self.timeout)
         d = point.connect(factory)
         d.addCallback(self.connectionMade, json_request)
 
-        # self.response_deferred will be fired in self.responseReceived, after
+        # response_deferred will be fired in responseReceived, after
         # we got response from the RPC server
-        self.response_deferred = Deferred()
-        self.response_deferred.addCallback(jsonrpc.decodeResponse)
-        return self.response_deferred
+        response_deferred.addCallback(jsonrpc.decodeResponse)
+        return response_deferred
