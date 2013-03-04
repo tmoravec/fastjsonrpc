@@ -138,7 +138,7 @@ class Proxy(object):
         self.response_deferred is THE problem ;-)
     """
 
-    def __init__(self, url, version=jsonrpc.VERSION_1, timeout=30,
+    def __init__(self, url, version=jsonrpc.VERSION_1, timeout=None,
                  verbose=False):
         """
         @type url: str
