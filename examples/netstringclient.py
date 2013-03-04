@@ -35,6 +35,10 @@ d = proxy.callRemote('none')
 d.addCallbacks(printValue, printError)
 dl.append(d)
 
+d = proxy.callRemote('echo', 123)
+d.addCallbacks(printValue, printError)
+dl.append(d)
+
 dl = defer.DeferredList(dl)
 dl.addCallback(shutDown)
 
