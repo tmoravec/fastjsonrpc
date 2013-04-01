@@ -49,3 +49,12 @@ Notes
 * I didn't test the JSON Class hinting, as mentioned in the version 1 spec. I
   leave this to the JSON parsing capabilities of respective libraries.
 
+
+Tests
+=====
+
+* SSL client test raises an error after shutDown. Looks like a bug in Trial
+  and we can ignore it.
+
+* Some higher level tests (and examples) expect MySQL running with user 'root'
+  and no password. Can be changed in code.
