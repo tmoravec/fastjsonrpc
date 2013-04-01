@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 
 from fastjsonrpc.netstringserver import JSONRPCServer
+from twisted.enterprise import adbapi
 
 
 class DummyProtocol(JSONRPCServer):
