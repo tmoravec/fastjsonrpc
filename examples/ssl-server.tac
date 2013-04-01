@@ -15,6 +15,10 @@ from twisted.application import internet
 from twisted.enterprise import adbapi
 from twisted.internet import ssl
 
+MYSQL_SERVER = 'localhost'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = ''
+
 
 class Example(JSONRPCServer):
     def jsonrpc_echo(self, data):
@@ -34,8 +38,8 @@ class Example(JSONRPCServer):
                 return None
 
         sql = 'SELECT User FROM user LIMIT 1'
-        dbpool = adbapi.ConnectionPool('MySQLdb', 'localhost', user='root',
-                                       passwd='', db='mysql')
+        dbpool = adbapi.ConnectionPool('MySQLdb', MYSQL_SERVER, MYSQL_USER,
+                                       MYSQL_PASSWD, db='mysql')
         d = dbpool.runQuery(sql)
         d.addCallback(capitalize)
         return d

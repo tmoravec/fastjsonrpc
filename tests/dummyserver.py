@@ -8,6 +8,10 @@ from twisted.cred.portal import IRealm
 from twisted.web.resource import IResource
 from fastjsonrpc.server import JSONRPCServer
 
+MYSQL_SERVER = 'localhost'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = ''
+
 
 class DummyServer(JSONRPCServer):
 
@@ -19,8 +23,8 @@ class DummyServer(JSONRPCServer):
             return sql_result[0]
 
         sql = 'SELECT User FROM user LIMIT 1'
-        dbpool = adbapi.ConnectionPool('MySQLdb', 'localhost', user='root',
-                                       passwd='', db='mysql')
+        dbpool = adbapi.ConnectionPool('MySQLdb', MYSQL_SERVER, MYSQL_USER,
+                                       MYSQL_PASSWD, db='mysql')
         d = dbpool.runQuery(sql)
         d.addCallback(firstRow)
         return d
