@@ -38,8 +38,9 @@ class Example(JSONRPCServer):
                 return None
 
         sql = 'SELECT User FROM user LIMIT 1'
-        dbpool = adbapi.ConnectionPool('MySQLdb', MYSQL_SERVER, MYSQL_USER,
-                                       MYSQL_PASSWD, db='mysql')
+        dbpool = adbapi.ConnectionPool('MySQLdb', MYSQL_SERVER,
+                                       user=MYSQL_USER, passwd=MYSQL_PASSWD,
+                                       db='mysql')
         d = dbpool.runQuery(sql)
         d.addCallback(capitalize)
         return d
