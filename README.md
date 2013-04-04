@@ -11,11 +11,11 @@ Read more about JSON-RPC at http://www.jsonrpc.org/
 Features
 ========
 
-* Support for HTTP and HTTPS as protocol (via twisted.web), more might come
-  in the future.
+* Support for HTTP and HTTPS as protocol (via twisted.web) and for more
+  lightweight netstring (see http://cr.yp.to/proto/netstrings.txt )
 
-* Support for HTTP authentization - only basic, not digest; use SSL for better
-  security.
+* Support for HTTP authentization - only basic, not digest; use SSL for
+  encrypted credentials.
 
 * Full standards compliance.
 
@@ -33,7 +33,9 @@ TODO
 * More tests, better (functionality) coverage. This applies to every project,
   always :-) .
 
-* Finish support for netstring protocol.
+* Refactoring, mostly tests.
+    * test_server and test_jsonrpc
+    * test_client and test_netstringclient
 
 
 Notes
@@ -49,12 +51,5 @@ Notes
 * I didn't test the JSON Class hinting, as mentioned in the version 1 spec. I
   leave this to the JSON parsing capabilities of respective libraries.
 
-
-Tests
-=====
-
 * SSL client test raises an error after shutDown. Looks like a bug in Trial
   and we can ignore it.
-
-* Some higher level tests (and examples) expect MySQL running with user 'root'
-  and no password. Can be changed in code.
