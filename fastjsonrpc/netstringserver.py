@@ -21,58 +21,34 @@ JSONRPC Server
 Provides JSONRPCServer class, which can be used to expose methods via RPC.
 """
 
-from twisted.web import resource
-from twisted.web import server
-from twisted.internet.defer import maybeDeferred
-from twisted.internet.defer import DeferredList
-from twisted.internet.defer import succeed
+from twisted.protocols import basic
+from twisted.internet.defer import succeed, DeferredList, maybeDeferred
+from twisted.python import log
 
 import jsonrpc
 
 
-class JSONRPCServer(resource.Resource):
-    """
-    JSON-RPC server. Subclass this, implement your own methods and publish
-    this as t.w.r.Resource using t.w.s.Site.
+class JSONRPCServer(basic.NetstringReceiver):
 
-    It will expose all methods that start with 'jsonrpc_' (without the
-    'jsonrpc_' part).
-    """
-
-    isLeaf = 1
-
-    def _getRequestContent(self, request):
+    def __init__(self, verbose=False):
         """
-        Parse the JSON from the request. Return it as a list, even if there was
-        only one method call (which would give us a dict). This will be useful
-        later, as we can iterate over it in the same manner if it is a single
-        call or a batch request.
+        Set verbosity level. By default we only log IP version, IP address
+        and port of incoming request. With verbose=True, we log incoming
+        requests bodies and outgoing responses bodies.
 
-        @type request: t.w.s.Request
-        @param request: The request from client
-
-        @rtype: list
-        @return: List of dicts, one dict per method call.
-
-        @raise JSONRPCError: If there's error in parsing.
+        @type verbose: bool
+        @param verbose: Log details or not
         """
 
-        request.content.seek(0, 0)
-        request_json = request.content.read()
-        request_content = jsonrpc.decodeRequest(request_json)
+        self.verbose = verbose
 
-        return request_content
-
-    def _parseError(self, request):
+    def _parseError(self):
         """
         Coin a 'parse error' response and finish the request.
-
-        @type request: t.w.s.Request
-        @param request: Request from client
         """
 
         response = jsonrpc.parseError()
-        self._sendResponse(response, request)
+        self._sendResponse(response)
 
     def _callMethod(self, request_dict):
         """
@@ -106,27 +82,40 @@ class JSONRPCServer(resource.Resource):
                                        id_=request_dict['id'],
                                        version=request_dict['jsonrpc'])
 
-    def render(self, request):
+    def _logRequest(self, request):
+        """
+        Log incoming request.
+
+        @type request: string|unicode
+        @param request: The incoming request
+        """
+
+        log.msg('Incoming request from peer: %s' % self.transport.getPeer())
+        if self.verbose:
+            log.msg('Incoming request body: %s' % request)
+
+    def stringReceived(self, string):
         """
         This is the 'main' RPC method. This will always be called when
         a request arrives and it's up to this method to parse the request and
         dispatch it further.
 
-        @type request: t.w.s.Request
-        @param request: Request from client
+        @type string: str
+        @param string: Request from client, just the 'string' itself, already
+            stripped of the netstring stuff.
 
-        @rtype: some constant :-)
-        @return: NOT_DONE_YET signalizing, that there's Deferred, that will
-            take care about sending the response.
-
-        @TODO verbose mode
+        @rtype: DeferredList
+        @return: Deferred, that will fire when all methods are finished. It
+            will already have all the callbacks and errbacks neccessary to
+            finish and send the response.
         """
 
+        self._logRequest(string)
         try:
-            request_content = self._getRequestContent(request)
+            request_content = jsonrpc.decodeRequest(string)
         except jsonrpc.JSONRPCError:
-            self._parseError(request)
-            return server.NOT_DONE_YET
+            self._parseError()
+            return None
 
         is_batch = True
         if not isinstance(request_content, list):
@@ -143,11 +132,11 @@ class JSONRPCServer(resource.Resource):
             dl.append(d)
 
         dl = DeferredList(dl, consumeErrors=True)
-        dl.addBoth(self._cbFinishRequest, request, is_batch)
+        dl.addBoth(self._cbFinishRequest, is_batch)
 
-        return server.NOT_DONE_YET
+        return dl
 
-    def _cbFinishRequest(self, results, request, is_batch):
+    def _cbFinishRequest(self, results, is_batch):
         """
         Manages sending the response to the client and finishing the request.
         This gets called after all methods have returned.
@@ -156,10 +145,8 @@ class JSONRPCServer(resource.Resource):
         @param results: List of tuples (success, result) what DeferredList
             returned.
 
-        @type request: t.w.s.Request
-        @param request: The request that came from a client
-
-        @TODO: document is_batch
+        @type is_batch: bool
+        @param is_batch: True if the request was a batch, False if it wasn't
         """
 
         method_responses = []
@@ -171,24 +158,31 @@ class JSONRPCServer(resource.Resource):
             method_responses = method_responses[0]
 
         response = jsonrpc.prepareCallResponse(method_responses)
-        self._sendResponse(response, request)
+        self._sendResponse(response)
 
-    def _sendResponse(self, response, request):
+    def _logResponse(self, response):
         """
-        Send the response back to client. Expects it to be already serialized
-        into JSON.
+        Log the response - if appropriate verbosity level is set.
 
-        @type response: str
-        @param response: JSON with the response
+        @type response: str|unicode
+        @param response: The JSON-encoded response we are about to send
+        """
 
-        @type request: t.w.s.Request
-        @param request The request that came from a client
+        if self.verbose:
+            log.msg('Outgoing response: %s' % response)
+
+    def _sendResponse(self, response):
+        """
+        Send the response to the client and close the connection.
+
+        @type response: str|unicode
+        @param response: The JSON-encoded response to send
         """
 
         if response != '[]':
-            # '[]' is result of batch request with notifications only
-            request.setHeader('Content-Type', 'application/json')
-            request.setHeader('Content-Length', str(len(response)))
-            request.write(response)
+            # '[]' is result of a notification, or a batch with notifications
+            # only
+            self._logResponse(response)
+            self.sendString(response)
 
-        request.finish()
+        self.transport.loseConnection()
