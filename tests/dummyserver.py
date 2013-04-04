@@ -8,9 +8,7 @@ from twisted.cred.portal import IRealm
 from twisted.web.resource import IResource
 from fastjsonrpc.server import JSONRPCServer
 
-MYSQL_SERVER = 'localhost'
-MYSQL_USER = 'root'
-MYSQL_PASSWD = ''
+DBFILE = 'sqlite.db'
 
 
 class DummyServer(JSONRPCServer):
@@ -19,15 +17,17 @@ class DummyServer(JSONRPCServer):
         return data
 
     def jsonrpc_sql(self):
-        def firstRow(sql_result):
-            return sql_result[0]
+        """ This is ugly, I'm aware. """
 
-        sql = 'SELECT User FROM user LIMIT 1'
-        dbpool = adbapi.ConnectionPool('MySQLdb', MYSQL_SERVER,
-                                       user=MYSQL_USER, passwd=MYSQL_PASSWD,
-                                       db='mysql')
+        def selectCount(_):
+            sql = 'SELECT COUNT(*) FROM test'
+            d = dbpool.runQuery(sql)
+            return d
+
+        sql = 'CREATE TABLE test (id int, value text, other_value text)'
+        dbpool = adbapi.ConnectionPool('sqlite3', DBFILE)
         d = dbpool.runQuery(sql)
-        d.addCallback(firstRow)
+        d.addCallback(selectCount)
         return d
 
     def jsonrpc_returnNone(self):
