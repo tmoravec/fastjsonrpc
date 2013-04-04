@@ -8,7 +8,7 @@ from twisted.web.server import NOT_DONE_YET
 from twisted.web.test.test_web import DummyRequest
 from twisted.internet.defer import succeed
 
-from dummyserver import DummyServer
+from dummyserver import DummyServer, DBFILE
 
 
 def _render(resource, request):
@@ -31,6 +31,10 @@ class TestRender(TestCase):
 
     def setUp(self):
         self.srv = DummyServer()
+
+    def tearDown(self):
+        if os.path.exists(DBFILE):
+            os.unlink(DBFILE)
 
     def test_emptyRequest(self):
         request = DummyRequest([''])
@@ -224,7 +228,7 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            expected = '{"error": null, "id": 1, "result": ["'
+            expected = '{"error": null, "id": 1, "result": ['
             self.assertTrue(request.written[0].startswith(expected))
 
         d.addCallback(rendered)
@@ -237,7 +241,7 @@ class TestRender(TestCase):
         d = _render(self.srv, request)
 
         def rendered(_):
-            expected = '{"jsonrpc": "2.0", "id": 1, "result": ["'
+            expected = '{"jsonrpc": "2.0", "id": 1, "result": ['
             self.assertTrue(request.written[0].startswith(expected))
 
         d.addCallback(rendered)
