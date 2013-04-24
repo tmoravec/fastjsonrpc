@@ -204,8 +204,7 @@ class Proxy(object):
 
         body = StringProducer(json_request)
 
-        headers_dict = {'Content-Type': ['application/json'],
-                        'Content-Length': [str(body.length)]}
+        headers_dict = {'Content-Type': ['application/json']}
         if not isinstance(self.credentials, Anonymous):
             headers_dict.update(self._getBasicHTTPAuthHeaders())
         headers = Headers(headers_dict)
