@@ -33,7 +33,7 @@ except ImportError:
         try:
             import simplejson as json
         except ImportError:
-            raise ImportError('cjon, json or simplejson required')
+            raise ImportError('cjson, json or simplejson required')
 
 import random
 import types
