@@ -109,6 +109,11 @@ class DummyResponse(object):
 
 
 class TestProxy(TestCase):
+    """
+    @TODO: Test callRemote using fake agent, using predefined 'output' JSON,
+           like in server tests. This might require a bit of refactoring in
+           client itself.
+    """
 
     def setUp(self):
         site = Site(DummyServer())
@@ -296,6 +301,9 @@ class TestProxy(TestCase):
 
 
 class TestSSLProxy(TestCase):
+    """
+    @TODO: All this does is checking whether Agent connects to SSL server...
+    """
 
     def setUp(self):
         site = Site(DummyServer())
@@ -342,6 +350,9 @@ class TestSSLProxy(TestCase):
         return d
 
 class TestHTTPAuth(TestCase):
+    """
+    @TODO: All this does is basically checking whether auth in Agent works...
+    """
 
     def setUp(self):
         checker = InMemoryUsernamePasswordDatabaseDontUse(user='password')
