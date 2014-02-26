@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import TestCase, SkipTest
 from twisted.internet.defer import Deferred
 from twisted.web.server import Site
 from twisted.internet import reactor
@@ -306,10 +306,13 @@ class TestSSLProxy(TestCase):
     """
 
     def setUp(self):
-        site = Site(DummyServer())
-
+        if not (os.path.exists('../ssl-keys/server.key') and 
+                os.path.exists('../ssl-keys/server.crt')):
+            raise SkipTest('For testing SSL, please put server.key and ' + \
+                           'server.crt to ssl-keys/')
         SSLFactory = ssl.DefaultOpenSSLContextFactory('../ssl-keys/server.key',
                                                       '../ssl-keys/server.crt')
+        site = Site(DummyServer())
         self.port = reactor.listenSSL(0, site, contextFactory=SSLFactory)
         self.portNumber = self.port._realPortNumber
 
