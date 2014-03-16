@@ -1,13 +1,21 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
+import json
 
 from StringIO import StringIO
-from twisted.trial.unittest import TestCase
-from twisted.web.server import NOT_DONE_YET
-from twisted.web.test.test_web import DummyRequest
+from twisted.internet import reactor, defer
 from twisted.internet.defer import succeed
+from twisted.internet.protocol import Protocol
+from twisted.trial.unittest import TestCase
+from twisted.web.client import Agent, ContentDecoderAgent, GzipDecoder
+from twisted.web.http_headers import Headers
+from twisted.web.iweb import IBodyProducer
+from twisted.web.server import NOT_DONE_YET, Site
+from twisted.web.test.test_web import DummyRequest
+from zope.interface import implements
 
+from fastjsonrpc.server import JSONRPCServer, EncodingJSONRPCServer
 from dummyserver import DummyServer, DBFILE
 
 
@@ -452,3 +460,76 @@ class TestRender(TestCase):
 
         d.addCallback(rendered)
         return d
+
+
+class TestEncodingJSONRPCServer(TestCase):
+
+    timeout = 1
+
+    @defer.inlineCallbacks
+    def test_EncodingJSONRPCServer(self):
+
+        DATA = {'foo': 'bar'}
+        REQUEST = '{"jsonrpc": "2.0", "method": "test", "params": [], "id": 1}'
+        RESPONSE = '{"jsonrpc": "2.0", "id": 1, "result": ' + json.dumps(DATA) + '}'
+
+
+        class RPCServer(JSONRPCServer):
+            def jsonrpc_test(self):
+                return defer.succeed(DATA)
+
+
+        class ReceiverProtocol(Protocol):
+            def __init__(self, finished):
+                self.finished = finished
+                self.body = []
+
+            def dataReceived(self, bytes):
+                self.body.append(bytes)
+
+            def connectionLost(self, reason):
+                self.finished.callback(''.join(self.body))
+
+
+        class StringProducer(object):
+            implements(IBodyProducer)
+
+            def __init__(self, body):
+                self.body = body
+                self.length = len(body)
+
+            def startProducing(self, consumer):
+                consumer.write(self.body)
+                return defer.succeed(None)
+
+            def pauseProducing(self):
+                pass
+
+            def stopProducing(self):
+                pass
+
+
+        server = RPCServer()
+        resource = EncodingJSONRPCServer(server)
+        site = Site(resource)
+
+        port = reactor.listenTCP(8888, site, interface='127.0.0.1')
+
+
+        agent = ContentDecoderAgent(Agent(reactor), [('gzip', GzipDecoder)])
+
+        response = yield agent.request('POST', 'http://127.0.0.1:8888',
+                                       Headers({'Accept-Encoding': ['gzip']}),
+                                       StringProducer(REQUEST))
+
+        self.assertTrue(isinstance(response, GzipDecoder))
+
+        finished = defer.Deferred()
+
+        response.deliverBody(ReceiverProtocol(finished))
+
+        data = yield finished
+
+        self.assertEqual(data, RESPONSE)
+
+        port.stopListening()
