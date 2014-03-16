@@ -9,6 +9,7 @@ from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
 from twisted.web.client import WebClientContextFactory, HTTPConnectionPool
+from twisted.web.client import ContentDecoderAgent, GzipDecoder
 from twisted.internet import ssl
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
@@ -419,6 +420,15 @@ class TestProxyFactory(TestCase):
         self.assertEqual(proxy2.agent._pool.cachedConnectionTimeout, timeout)
         self.assertEqual(proxy2.agent._pool.retryAutomatically, retry)
 
+    def test_init_HTTPCompression(self):
+
+        factory = ProxyFactory(compressedHTTP=True)
+        proxy = factory.getProxy('')
+
+        self.assertTrue(isinstance(proxy.agent, ContentDecoderAgent))
+        self.assertTrue(isinstance(proxy.agent._agent, Agent))
+        self.assertTrue('gzip' in proxy.agent._decoders)
+        self.assertEqual(proxy.agent._decoders['gzip'], GzipDecoder)
 
 class TestSSLProxy(TestCase):
     """

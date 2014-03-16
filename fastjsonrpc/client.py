@@ -32,7 +32,8 @@ from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent, HTTPConnectionPool
+from twisted.web.client import (Agent, ContentDecoderAgent, GzipDecoder,
+                                HTTPConnectionPool)
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -145,6 +146,10 @@ class ProxyFactory(object):
         @param retryAutomatically: Boolean indicating whether idempotent
             requests should be retried once if no response was received.
 
+        @type compressedHTTP: bool
+        @param compressedHTTP: Boolean indicating whether proxies can support
+            HTTP compression (actually gzip).
+
         @type sharedPool: bool
         @type sharedPool: Share one connection pool between all created proxies.
             The default is False.
@@ -163,6 +168,7 @@ class ProxyFactory(object):
         self._retryAutomatically = kwargs.get('retryAutomatically')
         if self._retryAutomatically is None:
             self._retryAutomatically = HTTPConnectionPool.retryAutomatically
+        self._compressedHTTP = kwargs.get('compressedHTTP') or False
         self._sharedPool = kwargs.get('sharedPool') or False
 
         self._pool = None
@@ -196,6 +202,9 @@ class ProxyFactory(object):
 
         proxy = Proxy(url, **kwargs)
 
+        if self._compressedHTTP:
+            self._setContentDecoder(proxy)
+
         return proxy
 
     def _getConnectionPool(self):
@@ -207,6 +216,9 @@ class ProxyFactory(object):
             pool.retryAutomatically = self._retryAutomatically
 
         return pool
+
+    def _setContentDecoder(self, proxy):
+        proxy.agent = ContentDecoderAgent(proxy.agent, [('gzip', GzipDecoder)])
 
 
 class Proxy(object):
