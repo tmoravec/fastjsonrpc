@@ -17,6 +17,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper, BasicCredentialFactory
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
+from fastjsonrpc.client import ProxyFactory
 from fastjsonrpc.client import Proxy
 from fastjsonrpc import jsonrpc
 
@@ -308,6 +309,63 @@ class TestProxy(TestCase):
         proxy = Proxy('', pool=pool)
 
         self.assertEqual(id(proxy.agent._pool), id(pool))
+
+class TestProxyFactory(TestCase):
+
+    def test_init(self):
+        factory = ProxyFactory()
+        proxy = factory.getProxy('')
+
+        self.assertEqual(proxy.version, jsonrpc.VERSION_1)
+        self.assertTrue(isinstance(proxy.credentials, Anonymous))
+        self.assertTrue(proxy.agent._connectTimeout is None)
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                        WebClientContextFactory))
+
+    def test_getProxy(self):
+        url1 = 'http://fakeurl1'
+        url2 = 'http://fakeurl2'
+
+        version = jsonrpc.VERSION_2
+        connectTimeout = 30
+        cred = UsernamePassword('username', 'password')
+        contextFactory = WebClientContextFactory()
+
+        factory = ProxyFactory(version=version, connectTimeout=connectTimeout,
+                               credentials=cred, contextFactory=contextFactory)
+
+        proxy1 = factory.getProxy(url1)
+        proxy2 = factory.getProxy(url2)
+
+        self.assertNotEqual(id(proxy1), id(proxy2))
+        self.assertNotEqual(id(proxy1.agent._pool), id(proxy2.agent._pool))
+
+        self.assertEqual(proxy1.url, url1)
+        self.assertEqual(proxy2.url, url2)
+
+        self.assertEqual(proxy1.version, version)
+        self.assertEqual(proxy2.version, version)
+        self.assertEqual(proxy1.credentials, cred)
+        self.assertEqual(proxy2.credentials, cred)
+        self.assertEqual(proxy1.agent._connectTimeout, connectTimeout)
+        self.assertEqual(proxy2.agent._connectTimeout, connectTimeout)
+        self.assertEqual(proxy1.agent._contextFactory, contextFactory)
+        self.assertEqual(proxy2.agent._contextFactory, contextFactory)
+
+    def test_sharedPool(self):
+        factory = ProxyFactory(sharedPool=True)
+
+        proxy1 = factory.getProxy('')
+        proxy2 = factory.getProxy('')
+        proxy3 = factory.getProxy('')
+
+        self.assertNotEqual(id(proxy1), id(proxy2))
+        self.assertNotEqual(id(proxy2), id(proxy3))
+        self.assertNotEqual(id(proxy1), id(proxy3))
+
+        self.assertEqual(id(proxy1.agent._pool), id(factory._pool))
+        self.assertEqual(id(proxy2.agent._pool), id(factory._pool))
+        self.assertEqual(id(proxy3.agent._pool), id(factory._pool))
 
 
 class TestSSLProxy(TestCase):
