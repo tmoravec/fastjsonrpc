@@ -154,12 +154,15 @@ class ProxyFactory(object):
         self._credentials = kwargs.get('credentials')
         self._contextFactory = kwargs.get('contextFactory')
         self._persistent = kwargs.get('persistent') or False
-        self._maxPersistentPerHost = (kwargs.get('maxPersistentPerHost')
-            or HTTPConnectionPool.maxPersistentPerHost)
-        self._cachedConnectionTimeout = (kwargs.get('cachedConnectionTimeout')
-            or HTTPConnectionPool.cachedConnectionTimeout)
-        self._retryAutomatically = (kwargs.get('retryAutomatically')
-            or HTTPConnectionPool.retryAutomatically)
+        self._maxPersistentPerHost = kwargs.get('maxPersistentPerHost')
+        if self._maxPersistentPerHost is None:
+            self._maxPersistentPerHost = HTTPConnectionPool.maxPersistentPerHost
+        self._cachedConnectionTimeout = kwargs.get('cachedConnectionTimeout')
+        if self._cachedConnectionTimeout is None:
+            self._cachedConnectionTimeout = HTTPConnectionPool.cachedConnectionTimeout
+        self._retryAutomatically = kwargs.get('retryAutomatically')
+        if self._retryAutomatically is None:
+            self._retryAutomatically = HTTPConnectionPool.retryAutomatically
         self._sharedPool = kwargs.get('sharedPool') or False
 
         self._pool = None

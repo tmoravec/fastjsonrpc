@@ -17,6 +17,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper, BasicCredentialFactory
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
+from fastjsonrpc.client import ProxyFactory
 from fastjsonrpc.client import Proxy
 from fastjsonrpc import jsonrpc
 
@@ -308,6 +309,59 @@ class TestProxy(TestCase):
         proxy = Proxy('', pool=pool)
 
         self.assertEqual(id(proxy.agent._pool), id(pool))
+
+class TestProxyFactory(TestCase):
+
+    #
+    # I trust twisted's well tested Agent and HTTPConnectionPool classes
+    #
+
+    def test_init_persistentConnections(self):
+
+        persistent = True
+        maxConn = 5
+        timeout = 3600
+        retry = False
+
+        factory = ProxyFactory(persistent=persistent,
+                               maxPersistentPerHost=maxConn,
+                               cachedConnectionTimeout=timeout,
+                               retryAutomatically=retry)
+
+        proxy = factory.getProxy('')
+
+        self.assertEqual(proxy.agent._pool.persistent, persistent)
+        self.assertEqual(proxy.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy.agent._pool.retryAutomatically, retry)
+
+    def test_init_sharedPersistentConnections(self):
+
+        persistent = True
+        maxConn = 5
+        timeout = 3600
+        retry = False
+
+        factory = ProxyFactory(sharedPool=True,
+                               persistent=persistent,
+                               maxPersistentPerHost=maxConn,
+                               cachedConnectionTimeout=timeout,
+                               retryAutomatically=retry)
+
+        proxy1 = factory.getProxy('')
+        proxy2 = factory.getProxy('')
+
+        self.assertEqual(id(proxy1.agent._pool), id(proxy2.agent._pool))
+
+        self.assertEqual(proxy1.agent._pool.persistent, persistent)
+        self.assertEqual(proxy1.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy1.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy1.agent._pool.retryAutomatically, retry)
+
+        self.assertEqual(proxy2.agent._pool.persistent, persistent)
+        self.assertEqual(proxy2.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy2.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy2.agent._pool.retryAutomatically, retry)
 
 
 class TestSSLProxy(TestCase):
