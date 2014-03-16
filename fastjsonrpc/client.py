@@ -32,7 +32,7 @@ from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent, WebClientContextFactory
+from twisted.web.client import Agent, HTTPConnectionPool
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -100,6 +100,78 @@ class StringProducer(object):
 
     def stopProducing(self):
         pass
+
+
+class ProxyFactory(object):
+    """
+    A factory to create Proxy objects. Passed parameters are used to create
+    all proxies. Supports creating proxies with a connection pool shared between
+    them.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        @type version: int
+        @param version: Which JSON-RPC version to use? The default is 1.0.
+
+        @type connectTimeout: float
+        @param connectTimeout: Connection timeout. Note that we don't connect
+            when creating this object, but in callRemote, so the timeout
+            will apply to callRemote.
+
+        @type credentials: twisted.cred.credentials.ICredentials
+        @param credentials: Credentials for basic HTTP authentication.
+            Supported are Anonymous and UsernamePassword classes.
+            If None then t.c.c.Anonymous object is used as default.
+
+        @type contextFactory: twisted.internet.ssl.ClientContextFactory
+        @param contextFactory: A context factory for SSL clients.
+            If None then Agent's default is used.
+
+        @type sharedPool: bool
+        @type sharedPool: Share one connection pool between all created proxies.
+            The default is False.
+        """
+        self._version = kwargs.get('version') or jsonrpc.VERSION_1
+        self._connectTimeout = kwargs.get('connectTimeout')
+        self._credentials = kwargs.get('credentials')
+        self._contextFactory = kwargs.get('contextFactory')
+        self._sharedPool = kwargs.get('sharedPool') or False
+
+        self._pool = None
+
+        if self._sharedPool:
+            self._pool = self._getConnectionPool()
+
+    def getProxy(self, url):
+        """
+        Create a Proxy object by parameters passed to the factory.
+
+        @type url: str
+        @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
+            more might come in the future.
+
+        @rtype: Proxy
+        @return: Newly created Proxy object.
+        """
+        pool = None
+        if self._sharedPool:
+            pool = self._pool
+
+
+        kwargs = {'version':        self._version,
+                  'connectTimeout': self._connectTimeout,
+                  'credentials':    self._credentials,
+                  'contextFactory': self._contextFactory,
+                  'pool':           pool}
+
+        proxy = Proxy(url, **kwargs)
+
+        return proxy
+
+    def _getConnectionPool(self):
+        pool = HTTPConnectionPool(reactor, False)
+        return pool
 
 
 class Proxy(object):
