@@ -110,8 +110,7 @@ class Proxy(object):
     """
 
     def __init__(self, url, version=jsonrpc.VERSION_1, connectTimeout=None,
-                 credentials=Anonymous(),
-                 contextFactory=WebClientContextFactory()):
+                 credentials=None, contextFactory=None, pool=None):
         """
         @type url: str
         @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
@@ -128,20 +127,39 @@ class Proxy(object):
         @type credentials: twisted.cred.credentials.ICredentials
         @param credentials: Credentials for basic HTTP authentication.
             Supported are Anonymous and UsernamePassword classes.
+            If None then t.c.c.Anonymous object is used as default.
 
         @type contextFactory: twisted.internet.ssl.ClientContextFactory
         @param contextFactory: A context factory for SSL clients.
+            If None then Agent's default is used.
+
+        @type pool: twisted.web.client.HTTPConnectionPool
+        @param pool: Connection pool used to manage HTTP connections.
+            If None then Agent's default is used.
         """
 
         self.url = url
         self.version = version
 
+        if not credentials:
+            credentials = Anonymous()
+
         if not isinstance(credentials, (Anonymous, UsernamePassword)):
             raise NotImplementedError(
                 "'%s' credentials are not supported" % type(credentials))
 
-        self.agent = Agent(reactor, connectTimeout=connectTimeout,
-                           contextFactory=contextFactory)
+        kwargs = {}
+
+        if connectTimeout:
+            kwargs['connectTimeout'] = connectTimeout
+
+        if contextFactory:
+            kwargs['contextFactory'] = contextFactory
+
+        if pool:
+            kwargs['pool'] = pool
+
+        self.agent = Agent(reactor, **kwargs)
         self.credentials = credentials
         self.auth_headers = None
 

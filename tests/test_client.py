@@ -8,7 +8,7 @@ from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
-from twisted.web.client import WebClientContextFactory
+from twisted.web.client import WebClientContextFactory, HTTPConnectionPool
 from twisted.internet import ssl
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
@@ -130,6 +130,10 @@ class TestProxy(TestCase):
         proxy = Proxy(url, version)
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
+        self.assertTrue(isinstance(proxy.credentials, Anonymous))
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                                   WebClientContextFactory))
+        self.assertTrue(proxy.agent._connectTimeout is None)
 
     def test_init_agent(self):
         proxy = Proxy('', '')
@@ -299,6 +303,12 @@ class TestProxy(TestCase):
         d.addCallback(finished)
         return d
 
+    def test_poolPassing(self):
+        pool = HTTPConnectionPool(reactor)
+        proxy = Proxy('', pool=pool)
+
+        self.assertEqual(id(proxy.agent._pool), id(pool))
+
 
 class TestSSLProxy(TestCase):
     """
@@ -306,7 +316,7 @@ class TestSSLProxy(TestCase):
     """
 
     def setUp(self):
-        if not (os.path.exists('../ssl-keys/server.key') and 
+        if not (os.path.exists('../ssl-keys/server.key') and
                 os.path.exists('../ssl-keys/server.crt')):
             raise SkipTest('For testing SSL, please put server.key and ' + \
                            'server.crt to ssl-keys/')
