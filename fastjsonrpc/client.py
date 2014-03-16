@@ -128,6 +128,23 @@ class ProxyFactory(object):
         @param contextFactory: A context factory for SSL clients.
             If None then Agent's default is used.
 
+        @type persistent: bool
+        @param persistent: Boolean indicating whether connections should be
+            persistent. If None then no persistent connections are created
+            (default behavior of t.w.c.Agent class).
+
+        @type maxPersistentPerHost: int
+        @param maxPersistentPerHost: The maximum number of cached persistent
+            connections for a host:port destination.
+
+        @type cachedConnectionTimeout: int
+        @param cachedConnectionTimeout: Number of seconds a cached persistent
+            connection will stay open before disconnecting.
+
+        @type retryAutomatically: bool
+        @param retryAutomatically: Boolean indicating whether idempotent
+            requests should be retried once if no response was received.
+
         @type sharedPool: bool
         @type sharedPool: Share one connection pool between all created proxies.
             The default is False.
@@ -136,6 +153,13 @@ class ProxyFactory(object):
         self._connectTimeout = kwargs.get('connectTimeout')
         self._credentials = kwargs.get('credentials')
         self._contextFactory = kwargs.get('contextFactory')
+        self._persistent = kwargs.get('persistent') or False
+        self._maxPersistentPerHost = (kwargs.get('maxPersistentPerHost')
+            or HTTPConnectionPool.maxPersistentPerHost)
+        self._cachedConnectionTimeout = (kwargs.get('cachedConnectionTimeout')
+            or HTTPConnectionPool.cachedConnectionTimeout)
+        self._retryAutomatically = (kwargs.get('retryAutomatically')
+            or HTTPConnectionPool.retryAutomatically)
         self._sharedPool = kwargs.get('sharedPool') or False
 
         self._pool = None
@@ -157,6 +181,8 @@ class ProxyFactory(object):
         pool = None
         if self._sharedPool:
             pool = self._pool
+        elif self._persistent:
+            pool = self._getConnectionPool()
 
 
         kwargs = {'version':        self._version,
@@ -170,7 +196,13 @@ class ProxyFactory(object):
         return proxy
 
     def _getConnectionPool(self):
-        pool = HTTPConnectionPool(reactor, False)
+        pool = HTTPConnectionPool(reactor, self._persistent)
+
+        if self._persistent:
+            pool.maxPersistentPerHost = self._maxPersistentPerHost
+            pool.cachedConnectionTimeout = self._cachedConnectionTimeout
+            pool.retryAutomatically = self._retryAutomatically
+
         return pool
 
 
