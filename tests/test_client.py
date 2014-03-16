@@ -9,6 +9,7 @@ from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
 from twisted.web.client import WebClientContextFactory, HTTPConnectionPool
+from twisted.web.client import ContentDecoderAgent, GzipDecoder
 from twisted.internet import ssl
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
@@ -17,6 +18,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper, BasicCredentialFactory
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
+from fastjsonrpc.client import ProxyFactory
 from fastjsonrpc.client import Proxy
 from fastjsonrpc import jsonrpc
 
@@ -309,6 +311,17 @@ class TestProxy(TestCase):
 
         self.assertEqual(id(proxy.agent._pool), id(pool))
 
+class TestProxyFactory(TestCase):
+
+    def test_init_HTTPCompression(self):
+
+        factory = ProxyFactory(compressedHTTP=True)
+        proxy = factory.getProxy('')
+
+        self.assertTrue(isinstance(proxy.agent, ContentDecoderAgent))
+        self.assertTrue(isinstance(proxy.agent._agent, Agent))
+        self.assertTrue('gzip' in proxy.agent._decoders)
+        self.assertEqual(proxy.agent._decoders['gzip'], GzipDecoder)
 
 class TestSSLProxy(TestCase):
     """
