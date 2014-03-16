@@ -32,7 +32,8 @@ from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent, HTTPConnectionPool
+from twisted.web.client import (Agent, ContentDecoderAgent, GzipDecoder,
+                                HTTPConnectionPool)
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -128,6 +129,10 @@ class ProxyFactory(object):
         @param contextFactory: A context factory for SSL clients.
             If None then Agent's default is used.
 
+        @type compressedHTTP: bool
+        @param compressedHTTP: Boolean indicating whether proxies can support
+            HTTP compression (actually gzip).
+
         @type sharedPool: bool
         @type sharedPool: Share one connection pool between all created proxies.
             The default is False.
@@ -136,6 +141,7 @@ class ProxyFactory(object):
         self._connectTimeout = kwargs.get('connectTimeout')
         self._credentials = kwargs.get('credentials')
         self._contextFactory = kwargs.get('contextFactory')
+        self._compressedHTTP = kwargs.get('compressedHTTP') or False
         self._sharedPool = kwargs.get('sharedPool') or False
 
         self._pool = None
@@ -167,11 +173,17 @@ class ProxyFactory(object):
 
         proxy = Proxy(url, **kwargs)
 
+        if self._compressedHTTP:
+            self._setContentDecoder(proxy)
+
         return proxy
 
     def _getConnectionPool(self):
         pool = HTTPConnectionPool(reactor, False)
         return pool
+
+    def _setContentDecoder(self, proxy):
+        proxy.agent = ContentDecoderAgent(proxy.agent, [('gzip', GzipDecoder)])
 
 
 class Proxy(object):
