@@ -17,6 +17,11 @@ Features
 * Support for HTTP authentization - only basic, not digest; use SSL for
   encrypted credentials.
 
+* Support for HTTP persistent connections and Factory to create proxies 
+  to different URLs
+
+* Support for HTTP compression
+
 * Full standards compliance.
 
 * Support both JSON-RPC standards at once - great if you don't control your
