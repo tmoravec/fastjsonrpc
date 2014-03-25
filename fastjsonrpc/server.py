@@ -192,3 +192,20 @@ class JSONRPCServer(resource.Resource):
             request.write(response)
 
         request.finish()
+
+
+def EncodingJSONRPCServer(server):
+    """
+    Return wrapped JSON-RPC server that supports HTTP compression (currently
+    gzip).
+
+    @type server: t.w.r.Resource
+    @param server: Instance of JSONRPCServer
+
+    @rtype: t.w.r.EncodingResourceWrapper
+    @return: Wrapper that implements HTTP compression
+    """
+    from twisted.web.resource import EncodingResourceWrapper
+    from twisted.web.server import GzipEncoderFactory
+
+    return EncodingResourceWrapper(server, [GzipEncoderFactory()])

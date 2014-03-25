@@ -32,7 +32,8 @@ from twisted.cred.credentials import Anonymous, UsernamePassword
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.defer import Deferred
-from twisted.web.client import Agent, WebClientContextFactory
+from twisted.web.client import (Agent, ContentDecoderAgent, GzipDecoder,
+                                HTTPConnectionPool)
 from twisted.web.http_headers import Headers
 
 import jsonrpc
@@ -102,6 +103,124 @@ class StringProducer(object):
         pass
 
 
+class ProxyFactory(object):
+    """
+    A factory to create Proxy objects. Passed parameters are used to create
+    all proxies. Supports creating proxies with a connection pool shared between
+    them.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        @type version: int
+        @param version: Which JSON-RPC version to use? The default is 1.0.
+
+        @type connectTimeout: float
+        @param connectTimeout: Connection timeout. Note that we don't connect
+            when creating this object, but in callRemote, so the timeout
+            will apply to callRemote.
+
+        @type credentials: twisted.cred.credentials.ICredentials
+        @param credentials: Credentials for basic HTTP authentication.
+            Supported are Anonymous and UsernamePassword classes.
+            If None then t.c.c.Anonymous object is used as default.
+
+        @type contextFactory: twisted.internet.ssl.ClientContextFactory
+        @param contextFactory: A context factory for SSL clients.
+            If None then Agent's default is used.
+
+        @type persistent: bool
+        @param persistent: Boolean indicating whether connections should be
+            persistent. If None then no persistent connections are created
+            (default behavior of t.w.c.Agent class).
+
+        @type maxPersistentPerHost: int
+        @param maxPersistentPerHost: The maximum number of cached persistent
+            connections for a host:port destination.
+
+        @type cachedConnectionTimeout: int
+        @param cachedConnectionTimeout: Number of seconds a cached persistent
+            connection will stay open before disconnecting.
+
+        @type retryAutomatically: bool
+        @param retryAutomatically: Boolean indicating whether idempotent
+            requests should be retried once if no response was received.
+
+        @type compressedHTTP: bool
+        @param compressedHTTP: Boolean indicating whether proxies can support
+            HTTP compression (actually gzip).
+
+        @type sharedPool: bool
+        @type sharedPool: Share one connection pool between all created proxies.
+            The default is False.
+        """
+        self._version = kwargs.get('version') or jsonrpc.VERSION_1
+        self._connectTimeout = kwargs.get('connectTimeout')
+        self._credentials = kwargs.get('credentials')
+        self._contextFactory = kwargs.get('contextFactory')
+        self._persistent = kwargs.get('persistent') or False
+        self._maxPersistentPerHost = kwargs.get('maxPersistentPerHost')
+        if self._maxPersistentPerHost is None:
+            self._maxPersistentPerHost = HTTPConnectionPool.maxPersistentPerHost
+        self._cachedConnectionTimeout = kwargs.get('cachedConnectionTimeout')
+        if self._cachedConnectionTimeout is None:
+            self._cachedConnectionTimeout = HTTPConnectionPool.cachedConnectionTimeout
+        self._retryAutomatically = kwargs.get('retryAutomatically')
+        if self._retryAutomatically is None:
+            self._retryAutomatically = HTTPConnectionPool.retryAutomatically
+        self._compressedHTTP = kwargs.get('compressedHTTP') or False
+        self._sharedPool = kwargs.get('sharedPool') or False
+
+        self._pool = None
+
+        if self._sharedPool:
+            self._pool = self._getConnectionPool()
+
+    def getProxy(self, url):
+        """
+        Create a Proxy object by parameters passed to the factory.
+
+        @type url: str
+        @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
+            more might come in the future.
+
+        @rtype: Proxy
+        @return: Newly created Proxy object.
+        """
+        pool = None
+        if self._sharedPool:
+            pool = self._pool
+        elif self._persistent:
+            pool = self._getConnectionPool()
+
+
+        kwargs = {'version':        self._version,
+                  'connectTimeout': self._connectTimeout,
+                  'credentials':    self._credentials,
+                  'contextFactory': self._contextFactory,
+                  'pool':           pool}
+
+        proxy = Proxy(url, **kwargs)
+
+        if self._compressedHTTP:
+            self._setContentDecoder(proxy)
+
+        return proxy
+
+    def _getConnectionPool(self):
+        pool = HTTPConnectionPool(reactor, self._persistent)
+
+        if self._persistent:
+            pool.maxPersistentPerHost = self._maxPersistentPerHost
+            pool.cachedConnectionTimeout = self._cachedConnectionTimeout
+            pool.retryAutomatically = self._retryAutomatically
+
+        return pool
+
+    def _setContentDecoder(self, proxy):
+        proxy.agent = ContentDecoderAgent(proxy.agent, [('gzip', GzipDecoder)])
+
+
 class Proxy(object):
     """
     A proxy to one specific JSON-RPC server. Pass the server URL to the
@@ -110,8 +229,7 @@ class Proxy(object):
     """
 
     def __init__(self, url, version=jsonrpc.VERSION_1, connectTimeout=None,
-                 credentials=Anonymous(),
-                 contextFactory=WebClientContextFactory()):
+                 credentials=None, contextFactory=None, pool=None):
         """
         @type url: str
         @param url: URL of the RPC server. Supports HTTP and HTTPS for now,
@@ -128,20 +246,39 @@ class Proxy(object):
         @type credentials: twisted.cred.credentials.ICredentials
         @param credentials: Credentials for basic HTTP authentication.
             Supported are Anonymous and UsernamePassword classes.
+            If None then t.c.c.Anonymous object is used as default.
 
         @type contextFactory: twisted.internet.ssl.ClientContextFactory
         @param contextFactory: A context factory for SSL clients.
+            If None then Agent's default is used.
+
+        @type pool: twisted.web.client.HTTPConnectionPool
+        @param pool: Connection pool used to manage HTTP connections.
+            If None then Agent's default is used.
         """
 
         self.url = url
         self.version = version
 
+        if not credentials:
+            credentials = Anonymous()
+
         if not isinstance(credentials, (Anonymous, UsernamePassword)):
             raise NotImplementedError(
                 "'%s' credentials are not supported" % type(credentials))
 
-        self.agent = Agent(reactor, connectTimeout=connectTimeout,
-                           contextFactory=contextFactory)
+        kwargs = {}
+
+        if connectTimeout:
+            kwargs['connectTimeout'] = connectTimeout
+
+        if contextFactory:
+            kwargs['contextFactory'] = contextFactory
+
+        if pool:
+            kwargs['pool'] = pool
+
+        self.agent = Agent(reactor, **kwargs)
         self.credentials = credentials
         self.auth_headers = None
 

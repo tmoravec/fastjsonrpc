@@ -8,7 +8,8 @@ from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
-from twisted.web.client import WebClientContextFactory
+from twisted.web.client import WebClientContextFactory, HTTPConnectionPool
+from twisted.web.client import ContentDecoderAgent, GzipDecoder
 from twisted.internet import ssl
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
@@ -17,6 +18,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper, BasicCredentialFactory
 
 from fastjsonrpc.client import ReceiverProtocol
 from fastjsonrpc.client import StringProducer
+from fastjsonrpc.client import ProxyFactory
 from fastjsonrpc.client import Proxy
 from fastjsonrpc import jsonrpc
 
@@ -130,6 +132,10 @@ class TestProxy(TestCase):
         proxy = Proxy(url, version)
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
+        self.assertTrue(isinstance(proxy.credentials, Anonymous))
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                                   WebClientContextFactory))
+        self.assertTrue(proxy.agent._connectTimeout is None)
 
     def test_init_agent(self):
         proxy = Proxy('', '')
@@ -299,6 +305,130 @@ class TestProxy(TestCase):
         d.addCallback(finished)
         return d
 
+    def test_poolPassing(self):
+        pool = HTTPConnectionPool(reactor)
+        proxy = Proxy('', pool=pool)
+
+        self.assertEqual(id(proxy.agent._pool), id(pool))
+
+
+class TestProxyFactory(TestCase):
+
+    def test_init(self):
+        factory = ProxyFactory()
+        proxy = factory.getProxy('')
+
+        self.assertEqual(proxy.version, jsonrpc.VERSION_1)
+        self.assertTrue(isinstance(proxy.credentials, Anonymous))
+        self.assertTrue(proxy.agent._connectTimeout is None)
+        self.assertTrue(isinstance(proxy.agent._contextFactory,
+                        WebClientContextFactory))
+
+    def test_getProxy(self):
+        url1 = 'http://fakeurl1'
+        url2 = 'http://fakeurl2'
+
+        version = jsonrpc.VERSION_2
+        connectTimeout = 30
+        cred = UsernamePassword('username', 'password')
+        contextFactory = WebClientContextFactory()
+
+        factory = ProxyFactory(version=version, connectTimeout=connectTimeout,
+                               credentials=cred, contextFactory=contextFactory)
+
+        proxy1 = factory.getProxy(url1)
+        proxy2 = factory.getProxy(url2)
+
+        self.assertNotEqual(id(proxy1), id(proxy2))
+        self.assertNotEqual(id(proxy1.agent._pool), id(proxy2.agent._pool))
+
+        self.assertEqual(proxy1.url, url1)
+        self.assertEqual(proxy2.url, url2)
+
+        self.assertEqual(proxy1.version, version)
+        self.assertEqual(proxy2.version, version)
+        self.assertEqual(proxy1.credentials, cred)
+        self.assertEqual(proxy2.credentials, cred)
+        self.assertEqual(proxy1.agent._connectTimeout, connectTimeout)
+        self.assertEqual(proxy2.agent._connectTimeout, connectTimeout)
+        self.assertEqual(proxy1.agent._contextFactory, contextFactory)
+        self.assertEqual(proxy2.agent._contextFactory, contextFactory)
+
+    def test_sharedPool(self):
+        factory = ProxyFactory(sharedPool=True)
+
+        proxy1 = factory.getProxy('')
+        proxy2 = factory.getProxy('')
+        proxy3 = factory.getProxy('')
+
+        self.assertNotEqual(id(proxy1), id(proxy2))
+        self.assertNotEqual(id(proxy2), id(proxy3))
+        self.assertNotEqual(id(proxy1), id(proxy3))
+
+        self.assertEqual(id(proxy1.agent._pool), id(factory._pool))
+        self.assertEqual(id(proxy2.agent._pool), id(factory._pool))
+        self.assertEqual(id(proxy3.agent._pool), id(factory._pool))
+
+    #
+    # I trust twisted's well tested Agent and HTTPConnectionPool classes
+    #
+
+    def test_init_persistentConnections(self):
+
+        persistent = True
+        maxConn = 5
+        timeout = 3600
+        retry = False
+
+        factory = ProxyFactory(persistent=persistent,
+                               maxPersistentPerHost=maxConn,
+                               cachedConnectionTimeout=timeout,
+                               retryAutomatically=retry)
+
+        proxy = factory.getProxy('')
+
+        self.assertEqual(proxy.agent._pool.persistent, persistent)
+        self.assertEqual(proxy.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy.agent._pool.retryAutomatically, retry)
+
+    def test_init_sharedPersistentConnections(self):
+
+        persistent = True
+        maxConn = 5
+        timeout = 3600
+        retry = False
+
+        factory = ProxyFactory(sharedPool=True,
+                               persistent=persistent,
+                               maxPersistentPerHost=maxConn,
+                               cachedConnectionTimeout=timeout,
+                               retryAutomatically=retry)
+
+        proxy1 = factory.getProxy('')
+        proxy2 = factory.getProxy('')
+
+        self.assertEqual(id(proxy1.agent._pool), id(proxy2.agent._pool))
+
+        self.assertEqual(proxy1.agent._pool.persistent, persistent)
+        self.assertEqual(proxy1.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy1.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy1.agent._pool.retryAutomatically, retry)
+
+        self.assertEqual(proxy2.agent._pool.persistent, persistent)
+        self.assertEqual(proxy2.agent._pool.maxPersistentPerHost, maxConn)
+        self.assertEqual(proxy2.agent._pool.cachedConnectionTimeout, timeout)
+        self.assertEqual(proxy2.agent._pool.retryAutomatically, retry)
+
+    def test_init_HTTPCompression(self):
+
+        factory = ProxyFactory(compressedHTTP=True)
+        proxy = factory.getProxy('')
+
+        self.assertTrue(isinstance(proxy.agent, ContentDecoderAgent))
+        self.assertTrue(isinstance(proxy.agent._agent, Agent))
+        self.assertTrue('gzip' in proxy.agent._decoders)
+        self.assertEqual(proxy.agent._decoders['gzip'], GzipDecoder)
 
 class TestSSLProxy(TestCase):
     """
@@ -306,7 +436,7 @@ class TestSSLProxy(TestCase):
     """
 
     def setUp(self):
-        if not (os.path.exists('../ssl-keys/server.key') and 
+        if not (os.path.exists('../ssl-keys/server.key') and
                 os.path.exists('../ssl-keys/server.crt')):
             raise SkipTest('For testing SSL, please put server.key and ' + \
                            'server.crt to ssl-keys/')
@@ -351,6 +481,7 @@ class TestSSLProxy(TestCase):
 
         d.addCallback(finished)
         return d
+
 
 class TestHTTPAuth(TestCase):
     """
