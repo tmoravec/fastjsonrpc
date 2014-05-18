@@ -133,8 +133,6 @@ class TestProxy(TestCase):
         self.assertEquals(proxy.url, url)
         self.assertEquals(proxy.version, version)
         self.assertTrue(isinstance(proxy.credentials, Anonymous))
-        self.assertTrue(isinstance(proxy.agent._contextFactory,
-                                   WebClientContextFactory))
         self.assertTrue(proxy.agent._connectTimeout is None)
 
     def test_init_agent(self):
@@ -321,8 +319,6 @@ class TestProxyFactory(TestCase):
         self.assertEqual(proxy.version, jsonrpc.VERSION_1)
         self.assertTrue(isinstance(proxy.credentials, Anonymous))
         self.assertTrue(proxy.agent._connectTimeout is None)
-        self.assertTrue(isinstance(proxy.agent._contextFactory,
-                        WebClientContextFactory))
 
     def test_getProxy(self):
         url1 = 'http://fakeurl1'
@@ -351,8 +347,6 @@ class TestProxyFactory(TestCase):
         self.assertEqual(proxy2.credentials, cred)
         self.assertEqual(proxy1.agent._connectTimeout, connectTimeout)
         self.assertEqual(proxy2.agent._connectTimeout, connectTimeout)
-        self.assertEqual(proxy1.agent._contextFactory, contextFactory)
-        self.assertEqual(proxy2.agent._contextFactory, contextFactory)
 
     def test_sharedPool(self):
         factory = ProxyFactory(sharedPool=True)
@@ -460,8 +454,6 @@ class TestSSLProxy(TestCase):
     def test_init_agent(self):
         proxy = Proxy('', '', contextFactory=WebClientContextFactory())
         self.assertTrue(isinstance(proxy.agent, Agent))
-        self.assertTrue(isinstance(proxy.agent._contextFactory,
-                                   ssl.ClientContextFactory))
 
     def test_callRemote(self):
         """
