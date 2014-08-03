@@ -8,7 +8,7 @@ from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.internet.error import TimeoutError
-from twisted.web.client import WebClientContextFactory, HTTPConnectionPool
+from twisted.web.client import HTTPConnectionPool
 from twisted.web.client import ContentDecoderAgent, GzipDecoder
 from twisted.internet import ssl
 from twisted.cred.portal import Portal
@@ -423,6 +423,12 @@ class TestProxyFactory(TestCase):
         self.assertTrue(isinstance(proxy.agent._agent, Agent))
         self.assertTrue('gzip' in proxy.agent._decoders)
         self.assertEqual(proxy.agent._decoders['gzip'], GzipDecoder)
+
+
+class WebClientContextFactory(ssl.ClientContextFactory):
+    def getContext(self, hostname, port):
+        return ssl.ClientContextFactory.getContext(self)
+
 
 class TestSSLProxy(TestCase):
     """

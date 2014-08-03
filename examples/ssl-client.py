@@ -9,10 +9,13 @@ sys.path.insert(0, os.path.abspath('..'))
 from twisted.internet import reactor
 from twisted.internet import defer
 from twisted.internet import ssl
-from twisted.web.client import WebClientContextFactory
 
 from fastjsonrpc.client import Proxy
 
+
+class WebClientContextFactory(ssl.ClientContextFactory):
+    def getContext(self, hostname, port):
+        return ssl.ClientContextFactory.getContext(self)
 
 def printValue(value):
     print "Result: %s" % str(value)
